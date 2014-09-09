@@ -1,6 +1,6 @@
 <?php
 /*
- * Updated for Stock by Attributes 1.5.2 by POTTERYHOUSE
+ * Updated for Stock by Attributes 1.5.2
  */
 if (!defined('IS_ADMIN_FLAG')) {
   die('Illegal Access');

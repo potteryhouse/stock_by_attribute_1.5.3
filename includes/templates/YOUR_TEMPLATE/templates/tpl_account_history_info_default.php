@@ -11,7 +11,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: tpl_account_history_info_default.php 19103 2011-07-13 18:10:46Z wilt $
  * 
- * Updated for Stock by Attributes 1.5.2 by POTTERYHOUSE
+ * Updated for Stock by Attributes 1.5.2
  */
 ?>
 <div class="centerColumn" id="accountHistInfo">

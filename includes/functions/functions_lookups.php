@@ -9,7 +9,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: functions_lookups.php 19352 2011-08-19 16:13:43Z ajeh $
  * 
- * Updated for Stock by Attributes 1.5.3
+ * Updated for Stock by Attributes 1.5.3.1
  */
 
 
@@ -158,7 +158,7 @@
 
 
 /**
- * Return a product's stock count, or is associated attributes, the stock of the attribute.
+ * Return a product's stock count, or the associated attributes stock count.
  *
  * @param int The product id of the product who's stock we want
  * @param array of int, attribute(s) associated with a product who's stock we want
@@ -197,9 +197,9 @@
 
           // obtain the attribute ids
   		  $query = 'select products_attributes_id 
-  		  			from '.TABLE_PRODUCTS_ATTRIBUTES.' 
+  		  			from ' . TABLE_PRODUCTS_ATTRIBUTES . ' 
   		  			'.$first_search.' 
-  		  			and products_id="'.$products_id.'" 
+  		  			and products_id = "' . (int)$products_id . '" 
   		  			order by products_attributes_id';
 	  	  $attributes_new = $db->Execute($query);
 
@@ -299,7 +299,6 @@
 */
 
 // START "Stock by Attributes"
-  //Updated by POTTERYHOUSE
   function zen_check_stock($products_id, $products_quantity, $attributes = null) {
 
   	if(!empty($attributes)){

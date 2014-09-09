@@ -229,15 +229,12 @@ for ($i=0, $n=sizeof($products); $i<$n; $i++) {
 			}
 			
 		}
-		else{
 				
 			//Set Custom ID variable.
 			if( STOCK_SBA_DISPLAY_CUSTOMID == 'true'){
 				$customid = zen_get_customid($products[$i]['id'], $attributes);
 			}
 			
-		}
-		
   } //end IF attributes push to array
   else{
   	//Section for products without attributes

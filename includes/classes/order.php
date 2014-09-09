@@ -7,7 +7,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version GIT: $Id: Author: Ian Wilson  Fri Jun 1 14:21:21 2012 +0000 Modified in v1.5.1 $
  * 
- * Updated for Stock by Attributes 1.5.2 by POTTERYHOUSE
+ * Updated for Stock by Attributes 1.5.2
  */
 /**
  * order class

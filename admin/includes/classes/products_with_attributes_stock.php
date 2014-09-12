@@ -209,7 +209,7 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
 		        $html .= '<td class="tdProdId" class="pwas">'.$products->fields['products_id'].'</td>';
 		        $html .= '<td class="tdProdName">'.$products->fields['products_name'].'</td>';
 		        
-		        if (STOCK_SHOW_IMAGE == 'true') $html .= '<td class="tdProdImage">'.zen_info_image($products->fields['products_image'], $products->fields['products_name'], "60", "60").'</td>';
+		        if (STOCK_SHOW_IMAGE == 'true') {$html .= '<td class="tdProdImage">'.zen_info_image($products->fields['products_image'], $products->fields['products_name'], "60", "60").'</td>';}
 		        //product.php? page=1 & product_type=1 & cPath=13 & pID=1042 & action=new_product
 		        //$html .= '<td class="tdProdModel">'.$products->fields['products_model'] .' </td>';
 		        $html .= '<td class="tdProdModel">'.$products->fields['products_model'] . '<br /><a href="'.zen_href_link(FILENAME_PRODUCT, "page=1&amp;product_type=".$products->fields['products_type']."&amp;cPath=".$products->fields['master_categories_id']."&amp;pID=".$products->fields['products_id']."&amp;action=new_product", 'NONSSL').'">Link</a> </td>';
@@ -550,7 +550,7 @@ function nullDataEntry($fieldtoNULL){
   		if($customid->fields['products_model']){
   		
 	  		//Test to see if a custom ID exists
-	  		//if there are a custom IDs with the attribute, then return them.
+	  		//if there are custom IDs with the attribute, then return them.
 	  			$multiplecid = null;
 	  			while(!$customid->EOF){
 	  				$multiplecid .= $customid->fields['products_model'] . ', ';

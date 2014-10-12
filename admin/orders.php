@@ -585,9 +585,9 @@ function couponpopupWindow(url) {
 			
           	//"Stock by Attributes" add custom ID to display
 			$customid = null;
-			$attributes = null;
 			//test if this is to be displayed
 			if( STOCK_SBA_DISPLAY_CUSTOMID == 'true'){
+  			$attributes = array(); // mc12345678 Moved to within if statement otherwise doesn't apply elsewhere.
 				//create array for use in zen_get_customid
 				$attributes[] = $order->products[$i]['attributes'][$j]['value_id'];
 				//get custom ID

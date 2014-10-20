@@ -1440,6 +1440,8 @@ while (!$chk_sale_categories_all->EOF) {
     $db->Execute("delete from " . TABLE_COUPON_RESTRICT . "
                   where product_id = '" . (int)$product_id . "'");
 
+    $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
+                  where products_id = '" . (int)$product_id . "'");
   }
 
   function zen_products_attributes_download_delete($product_id) {
@@ -1743,7 +1745,7 @@ while (!$chk_sale_categories_all->EOF) {
       $tax_multiplier = 0;
       while (!$tax->EOF) {
         $tax_multiplier += $tax->fields['tax_rate'];
-    $tax->MoveNext();
+		$tax->MoveNext();
       }
       return $tax_multiplier;
     } else {
@@ -2678,7 +2680,7 @@ function zen_copy_products_attributes($products_id_from, $products_id_to) {
 
     $sql = "select type_handler from " . TABLE_PRODUCT_TYPES . " where type_id = '" . (int)$product_type . "'";
     $handler = $db->Execute($sql);
-  return $handler->fields['type_handler'];
+	return $handler->fields['type_handler'];
   }
 
 /*

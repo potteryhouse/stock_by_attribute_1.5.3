@@ -692,10 +692,13 @@ class order extends base {
     // lowstock email report
     $this->email_low_stock='';
 
+    // mc12345678 cycle through each product that is in the order.
     for ($i=0, $n=sizeof($this->products); $i<$n; $i++) {
       $custom_insertable_text = '';
-      // Stock Update - Joao Correia
+      // Stock Update - Joao Correia - mc12345678 Subtract product in stock by product orders
       if (STOCK_LIMITED == 'true') {
+        // mc12345678 If downloads are possible then account for them in addition to all attributes.
+        // obtain the quantity of the total number of a product, and the status of shipping.
         if (DOWNLOAD_ENABLED == 'true') {
           $stock_query_raw = "select p.products_quantity, pad.products_attributes_filename, p.product_is_always_free_shipping
                               from " . TABLE_PRODUCTS . " p
@@ -719,10 +722,15 @@ class order extends base {
         $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_BEGIN');
 
         if ($stock_values->RecordCount() > 0) {
-          // do not decrement quantities if products_attributes_filename exists
+          // mc12345678 do not decrement quantities if products_attributes_filename exists for the products in the order;
+          // If download enabled is on, and 
+          // product shipping is free shipping always or free shipping never then do not subtract stock.
+          // 
+          // Decrement the stock value if any of the below are true: download is not enabled, 
+          // product is always free shipping is set to special Product/Download Requires Shipping then subtract stock, or there is not products_attributes_filename assigned to the product.
           if ((DOWNLOAD_ENABLED != 'true') || $stock_values->fields['product_is_always_free_shipping'] == 2 || (!$stock_values->fields['products_attributes_filename']) ) {
             $stock_left = $stock_values->fields['products_quantity'] - $this->products[$i]['qty'];
-            $this->products[$i]['stock_reduce'] = $this->products[$i]['qty'];
+            $this->products[$i]['stock_reduce'] = $this->products[$i]['qty']; // mc12345678 this value is not used anywhere but in this one line.
           } else {
             $stock_left = $stock_values->fields['products_quantity'];
           }
@@ -736,43 +744,58 @@ class order extends base {
 			$attribute_search = array();
 			$attribute_stock_left = STOCK_REORDER_LEVEL + 1;  // kuroi: prevent false low stock triggers  
 
+      // mc12345678 If the has attibutes then perform the following work.
 			if(isset($this->products[$i]['attributes']) and sizeof($this->products[$i]['attributes']) >0){
-				foreach($this->products[$i]['attributes'] as $attributes){
+        // mc12345678 Identify a list of attributes associated with the product
+        foreach($this->products[$i]['attributes'] as $attributes){
 					$attribute_search[] = $attributes['value_id'];
 				}
 			
+        /* mc12345678 If there is more than one attribute associated with the product then perform the first of the below, otherwise, if there is only a single attribute then perform the second action. */
 				if(sizeof($attribute_search) > 1){
-					$attribute_search = 'where options_values_id in ("'.implode('","', $attribute_search).'")';
+          // mc12345678 As written this will pull all cases of the options_values_id being found.
+          $attribute_search = 'where options_values_id in ("'.implode('","', $attribute_search).'")';
 				} else {
 					$attribute_search = 'where options_values_id="' . $attribute_search[0].'"';
 				}
 
+        // mc12345678 Get all of the products_attributes_id's for the product where the options_values_id are the attributes of a product.
 				$query = 'select products_attributes_id from ' . TABLE_PRODUCTS_ATTRIBUTES . ' ' . $attribute_search .' and products_id="' . zen_get_prid($this->products[$i]['id']) . '" order by products_attributes_id';
 				$attributes = $db->Execute($query);
 				$stock_attributes_search = array();
-				while(!$attributes->EOF){
+
+        // mc12345678 Create an array of all of the attributes_ids for the product's attributes
+        while(!$attributes->EOF){
 					$stock_attributes_search[] = $attributes->fields['products_attributes_id'];	
 					$attributes->MoveNext();
 				}
-				if(sizeof($stock_attributes_search) > 1){
+        // mc12345678 If there are more than one attributes_id then implode all of the attributes into a single comman separated variable.  If there is one attribute_id then do the second action 
+        if(sizeof($stock_attributes_search) > 1){
 					$stock_attributes_search = implode(',', $stock_attributes_search);
 				} else {
-					foreach($stock_attributes_search as $attribute_search){
+          // mc12345678 Why use this method of assigning, when there is only one item to be used?
+          foreach($stock_attributes_search as $attribute_search){
 						$stock_attributes_search1 = $attribute_search;
 					}
 					$stock_attributes_search = $stock_attributes_search1;
 				}
 				
+        // mc12345678 If there was only one attributes_id, then this will report the quantity of that one attribute; however, if there are multiple and the comma separated version of is applied, then the only value that will come back is the one of where all attributes are used. This does not appear to provide a correct total quantity for multiple attributes.
 				$get_quantity_query = 'select quantity from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
 
+        // mc12345678 Identify the stock available from SBA.
   			$attribute_stock_available = $db->Execute($get_quantity_query);	
+        // mc12345678 Identify the stock remaining for the overall stock by removing the number of the current product from the number available for the attributes_id. 
 				$attribute_stock_left = $attribute_stock_available->fields['quantity'] - $this->products[$i]['qty'];
-	
+
+        // mc12345678 Update the SBA table to reflect the stock remaining based on the above.
 				$attribute_update_query = 'update ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' set quantity='.$attribute_stock_left.' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
 				$db->Execute($attribute_update_query);	
 			}
 			// kuroi: End Stock by Attribute additions
 
+      // mc12345678 If the remaining stock is gone, then if supposed to not show sold out items then
+      //  turn the entire product off
           //        if ( ($stock_left < 1) && (STOCK_ALLOW_CHECKOUT == 'false') ) {
           if ($stock_left <= 0) {
             // only set status to off when not displaying sold out

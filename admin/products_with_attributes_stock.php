@@ -10,7 +10,7 @@
  */
 
 $SBAversion = 'Version 1.5.3.1';
-//add required refernced files
+//add required referenced files
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 require(DIR_WS_CLASSES . 'products_with_attributes_stock.php');
@@ -21,8 +21,7 @@ $stock = new products_with_attributes_stock;
 //set language
 if( isset($_SESSION['languages_id']) ){
 	$language_id = $_SESSION['languages_id'];
-}
-else{
+} else {
 	
 	$languages = zen_get_languages();
 	$languages_array = array();
@@ -38,10 +37,9 @@ else{
 }
 
 //action
-if( isset($_GET['action']) ){
+if( isset($_GET['action']) && $_GET['action']){
 	$action = addslashes(trim($_GET['action']));
-}
-else{
+} else {
 	$action = null;
 }
 
@@ -203,10 +201,10 @@ switch($action)
 		if ($_GET['products_id']) { $products_id = doubleval($_GET['products_id']); } //s_mack:noconfirm
 
 		$customid = addslashes(trim($_POST['customid']));
-		if ($_GET['customid']) {$customid = addslashes(trim($_GET['customid'])); } //s_mack:noconfirm
+		if (isset($_GET['customid']) && $_GET['customid']) {$customid = addslashes(trim($_GET['customid'])); } //s_mack:noconfirm
 		
 		//$quantity = $_GET['quantity']; //s_mack:noconfirm
-		if ($_GET['quantity']) { $quantity = doubleval($_GET['quantity']); } //s_mack:noconfirm
+		if (isset($_GET['quantity']) && $_GET['quantity']) { $quantity = doubleval($_GET['quantity']); } //s_mack:noconfirm
 		
 		//if invalid entry return to product
 		if( !is_numeric((int)$products_id) || is_null($products_id) ){

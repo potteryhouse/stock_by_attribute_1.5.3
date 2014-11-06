@@ -47,6 +47,23 @@
     }
   }
 
+function return_attribute_combinations($arrMain, $intVars, $currentLoop = array(), $currentIntVar = 0) {
+ 
+     for ($currentLoop[$currentIntVar] = 0; $currentLoop[$currentIntVar] < sizeof($arrMain[$currentIntVar]); $currentLoop[$currentIntVar]++) {
+          if ($intVars == $currentIntVar + 1) {
+               $arrNew2 = array();
+               for ($i = 0; $i<$intVars;$i++) {
+                    $arrNew2[] = $arrMain[$i][$currentLoop[$i]];
+               }
+               if (zen_not_null($arrNew2) && sizeof($arrNew2) > 0) { //Something about this test right, but it's the concept that is important, as long as there is something to evaluate/assign that is not nothing, then do the assignment.
+                    $arrNew[] = $arrNew2;
+               }
+          } else {
+                $arrNew = return_attribute_combination($arrMain, $intVars, $currentLoop, $currentIntVar + 1);
+          }
+     }
+     return $arrNew;
+}
 
   function zen_output_string_protected($string) {
     return zen_output_string($string, false, true);

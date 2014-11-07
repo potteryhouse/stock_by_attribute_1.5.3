@@ -47,6 +47,23 @@
     }
   }
 
+function return_attribute_combinations($arrMain, $intVars, $currentLoop = array(), $currentIntVar = 0) {
+ 
+     for ($currentLoop[$currentIntVar] = 0; $currentLoop[$currentIntVar] < sizeof($arrMain[$currentIntVar]); $currentLoop[$currentIntVar]++) {
+          if ($intVars == $currentIntVar + 1) {
+               $arrNew2 = array();
+               for ($i = 0; $i<$intVars;$i++) {
+                    $arrNew2[] = $arrMain[$i][$currentLoop[$i]];
+               }
+               if (zen_not_null($arrNew2) && sizeof($arrNew2) > 0) { //Something about this test right, but it's the concept that is important, as long as there is something to evaluate/assign that is not nothing, then do the assignment.
+                    $arrNew[] = $arrNew2;
+               }
+          } else {
+                $arrNew = return_attribute_combination($arrMain, $intVars, $currentLoop, $currentIntVar + 1);
+          }
+     }
+     return $arrNew;
+}
 
   function zen_output_string_protected($string) {
     return zen_output_string($string, false, true);
@@ -1490,32 +1507,99 @@ while (!$chk_sale_categories_all->EOF) {
   } */
 
   function zen_remove_order($order_id, $restock = false) {
-    global $db, $order;
+    global $db, $order;  // mc12345678 (Why global on $order? It isn't used in ZC, is there something that follows the call to this that needs it?)
     if ($restock == 'on') {
-      $order = $db->Execute("select products_id, products_quantity
+      $order = $db->Execute("select products_id, products_quantity, products_prid
                              from " . TABLE_ORDERS_PRODUCTS . "
                              where orders_id = '" . (int)$order_id . "'");
 
       while (!$order->EOF) {
-        //restored db
-        $restored_attributes = $db->Execute("select pa.products_attributes_id    
-                                              from ".TABLE_ORDERS_PRODUCTS_ATTRIBUTES." opa, ".TABLE_PRODUCTS_ATTRIBUTES." pa
-                                              where opa.orders_id='".(int)$order_id."'
-                                              and opa.products_options_id = pa.options_id
-                                              and pa.options_values_id = opa.products_options_values_id
-                                              and pa.products_id='".(int)$order->fields['products_id']."'
-                                              ORDER BY pa.products_attributes_id ASC
-                                            ");
-        while(!$restored_attributes->EOF) {
-          $attr_array[] = $restored_attributes->fields['products_attributes_id'];
-          $restored_attributes->MoveNext();
+        // START SBA //restored db
+        $attr_prod_query = 'select * from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' where products_id="'.$order->fields['products_id'].'"
+                    order by sort ASC;';
+
+        $attribute_products = $db->Execute($attr_prod_query);
+
+        // mc12345678 next section is performed if the order includes a product that is tracked by SBA.  
+        if(isset($attribute_products) && $attribute_products->RecordCount() > 0){
+          $attributeOption = array();
+          $products_display = array();
+          $products_ordered_array = array();
+          while (!$attribute_products->EOF){
+            $attributes_of_stock = explode(',',$attribute_products->fields['stock_attributes']);
+            $attributes_of_stock = '"' . implode('","', $attributes_of_stock) . '"';
+
+            if (PRODUCTS_OPTIONS_SORT_ORDER=='0') {
+              $options_order_by= ' order by LPAD(po.products_options_sort_order,11,"0")';
+            } else {
+              $options_order_by= ' order by po.products_options_name';
+            }
+
+/*          if ( PRODUCTS_OPTIONS_SORT_BY_PRICE =='1' ) {
+            $options_order_by.= ', LPAD(pa.products_options_sort_order,11,"0"), pov.products_options_values_name';
+          } else {
+            $options_order_by.= ', LPAD(pa.products_options_sort_order,11,"0"), pa.options_values_price';
+          } */
+
+          
+            $attributesSort = 'select * from '. TABLE_PRODUCTS_OPTIONS_VALUES . ' pov, ' . TABLE_PRODUCTS_ATTRIBUTES . ' pa  
+          	left join ' . TABLE_PRODUCTS_OPTIONS . ' po 
+            on po.products_options_id = pa.options_id
+            where pa.products_attributes_id in ( ' . $attributes_of_stock . ' ) 
+            and            pov.products_options_values_id = pa.options_values_id
+            and       po.language_id = "' . (int)$_SESSION['languages_id'] . '" ' . 
+              $options_order_by;
+          
+            $attributes_of_stock = $db->Execute($attributesSort);
+          
+            $attributes_output = array();
+            $attributeOption = array();
+            while(!$attributes_of_stock->EOF)
+            {
+              $attri_id = $attributes_of_stock->fields['products_attributes_id'];
+
+              $sqlOption = "SELECT * FROM " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov, " . TABLE_PRODUCTS_ATTRIBUTES .  " pa left join (" . TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD . " pad, " . TABLE_PRODUCTS_OPTIONS . " po) on (pa.products_attributes_id = pad.products_attributes_id AND po.products_options_id = pa.options_id)  WHERE pa.options_values_id = pov.products_options_values_id and pov.language_id = '". (int)$_SESSION['languages_id'] . "' and pa.products_attributes_id = '" . $attri_id . "' ";
+              $attribute_options = $db->Execute($sqlOption);
+
+              if($attribute_options->RecordCount() > 0){
+
+                while (!$attribute_options->EOF) {
+                  $attributeOption[(int)$attribute_options->fields['options_id']] = $attribute_options->fields['options_values_id'];
+                  $attribute_options->MoveNext();
+                }
+              }
+              $attributes_of_stock->MoveNext();
+            }
+
+            $op_uprid = $order->fields['products_id'] . ':' . md5(zen_get_uprid($order->fields['products_id'],$attributeOption));
+          // If the prid from the SBA item is the same as the prid for the order, then thw two items relate to the same thing and therefore action should be taken...
+
+            if ($op_uprid == $order->fields['products_prid']) {
+              $pai_result = array();
+              foreach($attributeOption as $optionID=>$optionvalueID) {
+                $pai_result[] = $db->Execute("select products_attributes_id from " . TABLE_PRODUCTS_ATTRIBUTES . " where options_id = " . (int)$optionID . " and options_values_id = " . (int)$optionvalueID . " and products_id = " . (int)$order->fields['products_id']);
+              }
+
+              $pai = array();
+              foreach ($pai_result as $pai_results) {
+                while (!$pai_results->EOF) {
+                  $pai[] = $pai_results->fields['products_attributes_id'];
+                  $pai_results->MoveNext();
+                }
+              }
+
+              sort($pai);
+            
+              $db->Execute("update " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
+                            set quantity = quantity + " . $order->fields['products_quantity'] . "
+                            where products_id = '" . (int)$order->fields['products_id'] . "'
+                            and stock_attributes = '" . implode(',', $pai) . "'
+                          ");
+            }
+            $attribute_products->MoveNext();
+          } 
         }
-        //echo implode(',', $attr_array);die;
-        $db->Execute("update ".TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK." 
-                        set quantity = quantity + " . $order->fields['products_quantity'] . " 
-                        where products_id = '" . (int)$order->fields['products_id'] . "'
-                        and stock_attributes = '".implode(',', $attr_array)."'
-                      ");
+        // End SBA modification.
         $db->Execute("update " . TABLE_PRODUCTS . "
                       set products_quantity = products_quantity + " . $order->fields['products_quantity'] . ", products_ordered = products_ordered - " . $order->fields['products_quantity'] . " where products_id = '" . (int)$order->fields['products_id'] . "'");
         $order->MoveNext();

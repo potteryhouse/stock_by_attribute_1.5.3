@@ -131,14 +131,13 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
         global $db;
 
         if(isset($_SESSION['languages_id'])){ $language_id = $_SESSION['languages_id'];} else { $language_id=1;}
-        if( isset($_GET['search']) ){
+        if( isset($_GET['search']) && $_GET['search']){ // mc12345678 Why was $_GET['search'] omitted?
             $s = zen_db_input($_GET['search']);
          	//$w = "(products.products_id = '$s' OR description.products_name LIKE '%$s%' OR products.products_model LIKE '%$s%') AND  " ;//original version of search
             //$w = "( products.products_id = '$s' OR description.products_name LIKE '%$s%' OR products.products_model LIKE '$s%' ) AND  " ;//changed search to products_model 'startes with'.
          	//$w = "( products.products_id = '$s' OR description.products_name LIKE '%$s%' ) AND  " ;//removed products_model from search
             $w = " AND ( products.products_id = '$s' OR description.products_name LIKE '%$s%' OR products.products_model LIKE '$s%' ) " ;//changed search to products_model 'startes with'.
-		} 
-		else {
+		} else {
 		    $w = ''; 
 			$s = '';
 		}
@@ -254,7 +253,7 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
                         // delete stock attribute
                         $db->Execute("DELETE FROM " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " WHERE stock_id = " . $attribute_products->fields['stock_id'] . " LIMIT 1;");
                       } else { 
-                        $attributes_output[] = '<strong>'.$stock_attribute['option'].':</strong> '.$stock_attribute['value'].'<br/>';
+                        $attributes_output[] = '<strong>'.$stock_attribute['option'].':</strong> '.$stock_attribute['value'].'<br />';
                       }
                   }
                   sort($attributes_output);

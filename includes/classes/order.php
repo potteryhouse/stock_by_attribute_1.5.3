@@ -749,6 +749,39 @@ class order extends base {
         // mc12345678 Identify a list of attributes associated with the product
 				$stock_attributes_search = zen_get_sba_stock_attribute(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
         
+/*        foreach($this->products[$i]['attributes'] as $attributes){
+					$attribute_search[] = $attributes['value_id'];
+				}
+*/			
+        /* mc12345678 If there is more than one attribute associated with the product then perform the first of the below, otherwise, if there is only a single attribute then perform the second action. */
+/*				if(sizeof($attribute_search) > 1){
+          // mc12345678 As written this will pull all cases of the options_values_id being found.
+          $attribute_search = 'where options_values_id in ("'.implode('","', $attribute_search).'")';
+				} else {
+					$attribute_search = 'where options_values_id="' . $attribute_search[0].'"';
+				}
+
+        // mc12345678 Get all of the products_attributes_id's for the product where the options_values_id are the attributes of a product.
+				$query = 'select products_attributes_id from ' . TABLE_PRODUCTS_ATTRIBUTES . ' ' . $attribute_search .' and products_id="' . zen_get_prid($this->products[$i]['id']) . '" order by products_attributes_id';
+				$attributes = $db->Execute($query);
+				$stock_attributes_search = array();
+
+        // mc12345678 Create an array of all of the attributes_ids for the product's attributes
+        while(!$attributes->EOF){
+					$stock_attributes_search[] = $attributes->fields['products_attributes_id'];	
+					$attributes->MoveNext();
+				}
+        // mc12345678 If there are more than one attributes_id then implode all of the attributes into a single comman separated variable.  If there is one attribute_id then do the second action 
+        if(sizeof($stock_attributes_search) > 1){
+					$stock_attributes_search = implode(',', $stock_attributes_search);
+				} else {
+          // mc12345678 Why use this method of assigning, when there is only one item to be used?
+          foreach($stock_attributes_search as $attribute_search){
+						$stock_attributes_search1 = $attribute_search;
+					}
+					$stock_attributes_search = $stock_attributes_search1;
+				}
+*/				
         // mc12345678 If there was only one attributes_id, then this will report the quantity of that one attribute; however, if there are multiple and the comma separated version of is applied, then the only value that will come back is the one of where all attributes are used. This does not appear to provide a correct total quantity for multiple attributes.
 				$get_quantity_query = 'select quantity from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
 

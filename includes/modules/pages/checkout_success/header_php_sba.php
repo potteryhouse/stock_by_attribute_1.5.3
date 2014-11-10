@@ -63,6 +63,8 @@ $global_query = $db->bindVars($global_query, ':customersID', $_SESSION['customer
 $global = $db->Execute($global_query);
 $flag_global_notifications = $global->fields['global_product_notifications'];*/
 
+$notificationsArray = array();
+
 if ($flag_global_notifications != '1') {
 
   $products_array = array();

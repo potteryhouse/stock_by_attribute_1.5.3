@@ -222,6 +222,22 @@ function dropSBATable(){
 	return;	
 }
 
+//Clean-up Drop table products_with_attributes_stock
+function dropSBAOrdersTable(){
+	global $db, $resultMmessage;
+	
+	/*
+	 * DROP TABLE IF EXISTS 'orders_products_attributes_stock';
+	 */
+	array_push($resultMmessage, '<br />Clean-Up, Removing Table orders_products_attributes_stock: ');
+	
+	$sql = "DROP TABLE IF EXISTS ".TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK;
+	$result = $db->Execute($sql);
+	array_push($resultMmessage, 'Deleted table orders_products_attributes_stock: ' . $result);
+	
+	return;	
+}
+
 //Add this script to the configuration menu
 function insertSBAconfigurationMenu(){
 	global $db, $resultMmessage;
@@ -441,6 +457,43 @@ function addSBAtable(){
 		alterSBAtabeSort();//Call function to Alter table products_with_attributes_stock sort field
 		alterSBAtableCustomid();//Call function to Alter table products_with_attributes_stock to add customid
 		alterSBAtableUniqueIndex();//Call function to Alter table products_with_attributes_stock UNIQUE INDEX
+	}
+
+  /*
+   * CREATE TABLE orders_products_attributes_stock ( 
+   * orders_products_attributes_stock_id int(11) NOT NULL auto_increment, 
+   * orders_products_attributes_id int(11) NOT NULL default '0', 
+   * orders_id int(11) NOT NULL default '0', 
+   * orders_products_id int(11) NOT NULL default '0', 
+   * stock_id int(11) NOT NULL default '0', 
+   * stock_attribute VARCHAR(255) NULL DEFAULT NULL, 
+   * products_prid tinytext NOT NULL, 
+   * PRIMARY KEY (orders_products_attributes_stock_id), 
+   * KEY idx_orders_id_prod_id_zen (orders_id,orders_products_id), 
+   * KEY idx_orders_stock_id_stock_id (orders_products_attributes_stock_id,stock_id) )
+   */
+  
+  if(!checkSBAtable(TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK)) {
+		$result = $db->Execute("CREATE TABLE IF NOT EXISTS `".TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK."` (
+    `orders_products_attributes_stock_id` INT(11) NOT NULL auto_increment, 
+    `orders_products_attributes_id` INT(11) NOT NULL default '0',
+    `orders_id` INT(11) NOT NULL default '0', 
+    `orders_products_id` INT(11) NOT NULL default '0', 
+    `stock_id` INT(11) NOT NULL default '0', 
+    `stock_attribute` VARCHAR(255) NULL DEFAULT NULL, 
+    `products_prid` TINYTEXT NOT NULL, 
+		PRIMARY KEY (`orders_products_attributes_stock_id`), 
+    KEY idx_orders_id_prod_id_zen (`orders_id`,`orders_products_id`), 
+    KEY idx_orders_stock_id_stock_id (`orders_products_attributes_stock_id`,`stock_id`) 
+		)");
+	
+		array_push($resultMmessage, '<br />Added Table orders_products_with_attributes_stock: ' . $result);
+	}
+	else{
+		//Alter / upgrade existing database table
+//		alterSBAtabeSort();//Call function to Alter table products_with_attributes_stock sort field
+//		alterSBAtableCustomid();//Call function to Alter table products_with_attributes_stock to add customid
+//		alterSBAtableUniqueIndex();//Call function to Alter table products_with_attributes_stock UNIQUE INDEX
 	}
 	return;
 }

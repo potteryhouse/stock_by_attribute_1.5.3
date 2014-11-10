@@ -115,7 +115,8 @@ function cartProductCount($products_id){
 							  					from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " 
 							  					where products_id = " . (int)$products_id . ";");
   	
-  			if ($attribute_stock->RecordCount() > 0) {
+        //Why not left join this below query into the above or why even have a separate/second query? Especially seeing that $attributes_stock is never used in the below results...  
+        if ($attribute_stock->RecordCount() > 0) {
   				// search for details for the particular attributes combination
   					$first_search = 'where options_values_id in ("'.implode('","',$attributes).'")';
   				
@@ -150,9 +151,10 @@ function cartProductCount($products_id){
 		  							from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' 
 		  							where products_id = '.(int)$products_id.' 
 		  							and stock_attributes in ("'.$stock_attributes.'");';  
+  		$customid = $db->Execute($customid_query);
   		}
   		
-  		$customid = $db->Execute($customid_query);
+  		
   		if($customid->fields['products_model']){
   		
 	  		//Test to see if a custom ID exists
@@ -182,3 +184,57 @@ function cartProductCount($products_id){
   		return;//nothing to return, should never reach this return
   	}
   }//end of function
+
+  /*
+   * $attribute_list raw attributes off of say the order or cart classes.
+   */
+  function zen_get_sba_stock_attribute($products_id, $attribute_list = array()){
+	global $db;
+
+    $attributes = array();
+    $stock_attributes_list = array();
+    if (isset($attribute_list) && (($k = sizeof($attribute_list)) > 0)) {
+      for ($j = 0; $j < $k; $j++) {
+        if (true) { // mc12345678 Here is one place where verification can be performed as to whether a particular attribute should be added.  This is probably the best place to do the review because all aspects of the attribute are available.
+          $attributes[] = $attribute_list[$j]['value_id'];
+        }
+      }
+      
+  		// obtain the attribute ids
+  		$query = 'select products_attributes_id 
+        from '.TABLE_PRODUCTS_ATTRIBUTES.' 
+        	where options_values_id in ("'.implode('","',$attributes).'") 
+      		and products_id='.(int)$products_id.' 
+  				order by products_attributes_id';
+      $attributes_new = $db->Execute($query);
+  				
+  		while(!$attributes_new->EOF){
+        if (true) { // mc12345678 Here is one place where verification can be performed as to whether a particular attribute should be added.
+          $stock_attributes_list[] = $attributes_new->fields['products_attributes_id'];
+        }
+  			$attributes_new->MoveNext();
+  		}
+      sort($stock_attributes_list);
+          
+  		$stock_attributes = implode(',',$stock_attributes_list);
+    }
+    return $stock_attributes;
+  }
+
+  function zen_get_sba_stock_attribute_id($products_id, $attribute_list = array()){
+    global $db;
+
+    if (isset($attribute_list) && (($k = sizeof($attribute_list)) > 0)) {
+      $stock_attribute = zen_get_sba_stock_attribute($products_id, $attribute_list);
+      $query = 'select stock_id from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . 
+                ' where `stock_attributes` = "' . $stock_attribute . '" and products_id = ' . (int)$products_id;
+
+  		$stock_id = $db->Execute($query);
+
+      if (zen_not_null($stock_id) && sizeof($stock_id) > 1) {
+        echo 'This is an error situation, as only one record should be returned.  More than one stock id was returned which should not be possible.';
+      } else {
+        return $stock_id->fields['stock_id'];
+      }
+    }
+  }

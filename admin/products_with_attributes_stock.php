@@ -158,15 +158,8 @@ switch($action)
 			$s_mack_noconfirm .="quantity=" . $quantity . "&"; //s_mack:noconfirm
 			$s_mack_noconfirm .= "customid=" . $customid . "&"; //s_mack:noconfirm
 			
-			if(sizeof($attributes) > 1)
-			{
-				sort($attributes);
-				$stock_attributes = implode(',',$attributes);
-			}
-			else
-			{
-				$stock_attributes = $attributes[0];
-			}
+  		sort($attributes);
+			$stock_attributes = implode(',',$attributes);
 			$s_mack_noconfirm .='attributes=' . $stock_attributes . '&'; //kuroi: to pass string not array
 
 			$query = 'select * from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' where products_id = '.$products_id.' and stock_attributes="'.$stock_attributes.'"';

@@ -285,7 +285,9 @@ switch($action)
 				}
 				$intVars = sizeof($arrMain);
 				$arrNew = array();
-			
+        
+        $arrNew = return_attribute_combinations($arrNew, $intVars);
+/*        
 				if ($intVars >= 1) {
 					//adds attribute combinations
 					// there are X variables / attributes
@@ -307,7 +309,13 @@ switch($action)
 													for ($m = 0;$m < sizeof($arrMain[4]);$m++) {
 														if ($intVars >= 6) {
 															for ($n = 0;$n < sizeof($arrMain[5]);$n++) {
-																$arrNew[] = array($arrMain[0][$i], $arrMain[1][$j], $arrMain[2][$k], $arrMain[3][$l], $arrMain[4][$m], $arrMain[5][$n]);
+                                if ($intVars >= 7){
+                                  for ($o = 0; $o < sizeof($arrMain[6]); $o++) {
+                                  $arrNew[] = array($arrMain[0][$i], $arrMain[1][$j], $arrMain[2][$k], $arrMain[3][$l], $arrMain[4][$m], $arrMain[5][$n], $arrMain[6][$o]);
+                                  }
+                                } else {
+                                  $arrNew[] = array($arrMain[0][$i], $arrMain[1][$j], $arrMain[2][$k], $arrMain[3][$l], $arrMain[4][$m], $arrMain[5][$n]);
+                                }
 															}
 														} else {
 															$arrNew[] = array($arrMain[0][$i], $arrMain[1][$j], $arrMain[2][$k], $arrMain[3][$l], $arrMain[4][$m]);
@@ -330,7 +338,7 @@ switch($action)
 						}
 					}
 					
-					}
+				}*/
 					
 				//loop through the list of variables / attributes
 				//add each one to the database

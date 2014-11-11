@@ -755,7 +755,14 @@ class order extends base {
 */			
         /* mc12345678 If there is more than one attribute associated with the product then perform the first of the below, otherwise, if there is only a single attribute then perform the second action. */
 /*				if(sizeof($attribute_search) > 1){
-          // mc12345678 As written this will pull all cases of the options_values_id being found.
+        foreach($this->products[$i]['attributes'] as $attributes){
+					$attribute_search[] = $attributes['value_id'];
+				}
+			
+        /* mc12345678 If there is more than one attribute associated with the product then perform the first of the below, otherwise, if there is only a single attribute then perform the second action. */
+/*				if(sizeof($attribute_search) > 1){
+        
+ // mc12345678 As written this will pull all cases of the options_values_id being found.
           $attribute_search = 'where options_values_id in ("'.implode('","', $attribute_search).'")';
 				} else {
 					$attribute_search = 'where options_values_id="' . $attribute_search[0].'"';

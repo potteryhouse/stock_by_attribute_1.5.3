@@ -17,13 +17,16 @@ class products_with_attributes_stock extends base {
     }
     if ($notifier == 'NOTIFY_ORDER_PROCESSING_ATTRIBUTES_BEGIN') {
       
-      $stock_attribute = zen_get_sba_stock_attribute(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
-      $stock_id = zen_get_sba_stock_attribute_id(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']); //true; // Need to use the $stock_attribute/attributes to obtain the attribute id.
+//      $stock_attribute = zen_get_sba_stock_attribute(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
+//      $stock_id = zen_get_sba_stock_attribute_id(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']); //true; // Need to use the $stock_attribute/attributes to obtain the attribute id.
     }
 
     if ($notifier == 'NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM') {
-			/* First check to see if SBA is installed */
-			if (defined('TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK') && zen_not_null($paramsArray['stock_id'])) {  
+			/* First check to see if SBA is installed and if it is then look to see if a value is 
+       *  supplied in the stock_id parameter (which should only be populated when a SBA tracked
+       *  item is in the order */
+      $_SESSION['paramsArray'] = $paramsArray;
+			if (defined('TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK') && zen_not_null($paramsArray['stock_info']['stock_id'])) {  
         //Need to validate that order had attributes in it.  If so, then were they tracked by SBA and then add to appropriate table.
 /*          `orders_products_attributes_stock_id` INT(11) NOT NULL auto_increment, 
     `orders_products_attributes_id` INT(11) NOT NULL default '0',
@@ -35,8 +38,8 @@ class products_with_attributes_stock extends base {
               $sql_data_array = array('orders_products_attributes_id' =>$paramsArray['orders_products_attributes_id'],
                               'orders_id' =>$paramsArray['orders_id'], 
                               'orders_products_id' =>$paramsArray['orders_products_id'], 
-                              'stock_id' => $paramsArray['stock_id'], 
-                              'stock_attribute' => $paramsArray['stock_attribute'], 
+                              'stock_id' => $paramsArray['stock_info']['stock_id'], 
+                              'stock_attribute' => $paramsArray['stock_info']['stock_attribute'], 
                               'products_prid' =>$paramsArray['products_prid']);
       zen_db_perform(TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK, $sql_data_array); //inserts data into the TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK table.
 

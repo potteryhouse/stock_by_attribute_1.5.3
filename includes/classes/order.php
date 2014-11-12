@@ -865,8 +865,7 @@ class order extends base {
       $this->products_ordered_attributes = '';
       if (isset($this->products[$i]['attributes'])) {
         $attributes_exist = '1';
-        $stock_attribute = zen_get_sba_stock_attribute(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
-        $stock_id = zen_get_sba_stock_attribute_id(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']); //true; // Need to use the $stock_attribute/attributes to obtain the attribute id.
+        $stock_info = zen_get_sba_stock_attribute_info(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
         for ($j=0, $n2=sizeof($this->products[$i]['attributes']); $j<$n2; $j++) {
           if (DOWNLOAD_ENABLED == 'true') {
             $attributes_query = "select popt.products_options_name, poval.products_options_values_name,
@@ -942,7 +941,7 @@ class order extends base {
           $order_products_attributes_id = $db->Insert_ID();
 
           //mc12345678 probably want to obtain the same merged data as above related to the orders_products_attributes_id.
-          $this->notify('NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM', array_merge(array('orders_products_attributes_id' => $order_products_attributes_id, 'stock_attribute'=>$stock_attribute, 'stock_id'=>$stock_id), $sql_data_array));
+          $this->notify('NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM', array_merge(array('orders_products_attributes_id' => $order_products_attributes_id, 'stock_info'=>$stock_info), $sql_data_array));
 
           if ((DOWNLOAD_ENABLED == 'true') && isset($attributes_values->fields['products_attributes_filename']) && zen_not_null($attributes_values->fields['products_attributes_filename'])) {
             $sql_data_array = array('orders_id' => $zf_insert_id,

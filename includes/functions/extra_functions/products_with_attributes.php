@@ -186,8 +186,13 @@ function cartProductCount($products_id){
   }//end of function
 
   /*
-   * $attribute_list raw attributes off of say the order or cart classes.
-   */
+   * Function to return the stock_attribute field from the SBA table products_with_attributes_stock.
+   * 
+	 * @access  public
+   * @param   integer   $products_id      The product id of the product on which to obtain the stock attribute.
+	 * @param   array     $attribute_list   The attribute array of the product identified in products_id
+   * @returns string    $stock_attributes A comma separated (if >1 attribute) string of the products_attributes_id sorted by products_attributes_id. This is the current set of information stored in the SBA table for stock_attributes.
+	 */
   function zen_get_sba_stock_attribute($products_id, $attribute_list = array()){
 	global $db;
 
@@ -214,13 +219,21 @@ function cartProductCount($products_id){
         }
   			$attributes_new->MoveNext();
   		}
-      sort($stock_attributes_list);
+      //sort($stock_attributes_list); //Unnecessary as the query is already sorted by the value.
           
   		$stock_attributes = implode(',',$stock_attributes_list);
     }
     return $stock_attributes;
   }
 
+  /*
+   * Function to return the stock_attribute_id field from the SBA table products_with_attributes_stock. Makes a call to zen_get_sba_stock_attribute in order to identify data to help with this search.
+   * 
+	 * @access  public
+   * @param   integer   $products_id      The product id of the product on which to obtain the stock attribute.
+	 * @param   array     $attribute_list   The attribute array of the product identified in products_id
+   * @returns integer   stock_id          The value of the unique id in the SBA table products_with_attributes_stock
+	 */
   function zen_get_sba_stock_attribute_id($products_id, $attribute_list = array()){
     global $db;
 
@@ -237,4 +250,60 @@ function cartProductCount($products_id){
         return $stock_id->fields['stock_id'];
       }
     }
+  }
+  
+  /*
+   * Function to return the information related to the SBA tracked stock based on receiving the product id and the attributes associated with the product.
+   * 
+	 * @access  public
+   * @param   integer   $products_id      The product id of the product on which to obtain the stock attribute.
+	 * @param   array     $attribute_list   The attribute array of the product identified in products_id
+   * @returns array   $attribute_info     The values to be collected/used by the calling function.  This includes the stock_attribute and the stock_id both information to be contained in the SBA table.
+	 */
+  function zen_get_sba_stock_attribute_info($products_id, $attribute_list = array()){
+    global $db;
+    
+    $attribute_info = array();
+
+    if (isset($attribute_list) && (($k = sizeof($attribute_list)) > 0)) {
+      $attribute_info['stock_attribute'] = zen_get_sba_stock_attribute($products_id, $attribute_list);
+      $query = 'select stock_id from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . 
+                ' where `stock_attributes` = "' . $attribute_info['stock_attribute'] . '" and products_id = ' . (int)$products_id;
+
+  		$stock_id = $db->Execute($query);
+
+      if (zen_not_null($stock_id) && sizeof($stock_id) > 1) {
+        echo 'This is an error situation, as only one record should be returned.  More than one stock id was returned which should not be possible.';
+      } else {
+        $attribute_info['stock_id'] = $stock_id->fields['stock_id'];
+        return $attribute_info;
+      }
+    }
+  }  
+  function zen_get_sba_ids_from_attribute($products_attributes_id = array()){
+    global $db;
+    
+    if (!is_array($products_attributes_id)){
+      $products_attributes_id = array($products_attributes_id);
+    }
+    $products_stock_attributes = $db->Execute("select stock_id, stock_attributes from " . 
+                                              TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK);
+    $stock_id_list = array();
+    /* The below "search" is one reason that the original tables for SBA should be better refined
+     * and not use comma separated items in a field...
+     */
+    while (!$products_stock_attributes->EOF) {
+      $stock_attrib_list = array();
+      $stock_attrib_list = explode(',', $products_stock_attributes->fields['stock_attributes']);
+
+      foreach($stock_attrib_list as $stock_attrib){
+        if (in_array($stock_attrib, $products_attributes_id)) {
+          $stock_id_list[] = $products_stock_attributes->fields['stock_id'];
+          continue;
+        }
+      }
+      
+      $products_stock_attributes->MoveNext;
+    }
+    return $stock_id_list;
   }

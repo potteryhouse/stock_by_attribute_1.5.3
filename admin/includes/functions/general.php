@@ -1528,7 +1528,6 @@ while (!$chk_sale_categories_all->EOF) {
       foreach($stock_attrib_list as $stock_attrib){
         if (in_array($stock_attrib, $products_attributes_id)) {
           $stock_id_list[] = $products_stock_attributes->fields['stock_id'];
-          $_SESSION['stock_id_list'] = $stock_id_list;
           continue;
         }
       }
@@ -2360,6 +2359,7 @@ function zen_copy_products_attributes($products_id_from, $products_id_to) {
     }
 
     $db->Execute("delete from " . TABLE_PRODUCTS_ATTRIBUTES . " where products_id = '" . (int)$delete_product_id . "'");
+    $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " where products_id = '" . (int)$delete_product_id . "'");
 }
 
 

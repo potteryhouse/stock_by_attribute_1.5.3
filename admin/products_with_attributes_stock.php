@@ -10,7 +10,7 @@
  */
 
 $SBAversion = 'Version 1.5.3.1';
-//add required refernced files
+//add required referenced files
 require('includes/application_top.php');
 require(DIR_WS_CLASSES . 'currencies.php');
 require(DIR_WS_CLASSES . 'products_with_attributes_stock.php');
@@ -21,8 +21,7 @@ $stock = new products_with_attributes_stock;
 //set language
 if( isset($_SESSION['languages_id']) ){
 	$language_id = $_SESSION['languages_id'];
-}
-else{
+} else {
 	
 	$languages = zen_get_languages();
 	$languages_array = array();
@@ -40,8 +39,7 @@ else{
 //action
 if( isset($_GET['action']) ){
 	$action = addslashes(trim($_GET['action']));
-}
-else{
+} else {
 	$action = null;
 }
 
@@ -158,13 +156,10 @@ switch($action)
 			$s_mack_noconfirm .="quantity=" . $quantity . "&"; //s_mack:noconfirm
 			$s_mack_noconfirm .= "customid=" . $customid . "&"; //s_mack:noconfirm
 			
-			if(sizeof($attributes) > 1)
-			{
+			if(sizeof($attributes) > 1){
 				sort($attributes);
 				$stock_attributes = implode(',',$attributes);
-			}
-			else
-			{
+			}else{
 				$stock_attributes = $attributes[0];
 			}
 			$s_mack_noconfirm .='attributes=' . $stock_attributes . '&'; //kuroi: to pass string not array
@@ -460,8 +455,8 @@ global $template_dir;
 <link rel="stylesheet" type="text/css" href="./includes/stylesheet.css">
 <link rel="stylesheet" type="text/css" href="./includes/cssjsmenuhover.css" media="all" id="hoverJS">
 <link rel="stylesheet" type="text/css" href="./includes/products_with_attributes_stock_ajax.css" media="all" id="hoverJS">
-<script src="<?php echo HTTPS_CATALOG_SERVER . '/' . DIR_WS_TEMPLATES . $template_dir; ?>/jscript/jquery-1.10.2.min.js"></script>
-<script type="text/javascript" src="<?php echo HTTPS_CATALOG_SERVER . '/' . DIR_WS_TEMPLATES . $template_dir; ?>/jscript/jquery.form.js"></script>
+<script src="<?php echo HTTP_CATALOG_SERVER . '/' . DIR_WS_TEMPLATES . $template_dir; ?>/jscript/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="<?php echo HTTP_CATALOG_SERVER . '/' . DIR_WS_TEMPLATES . $template_dir; ?>/jscript/jquery.form.js"></script>
 <script type="text/javascript" src="./products_with_attributes_stock_ajax.js"></script>
 <script type="text/javascript" src="./includes/menu.js"></script>
 <script type="text/javascript" src="./includes/general.js"></script>

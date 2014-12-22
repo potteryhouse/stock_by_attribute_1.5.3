@@ -1490,7 +1490,7 @@ while (!$chk_sale_categories_all->EOF) {
   } */
 
   function zen_remove_order($order_id, $restock = false) {
-    global $db, $order;
+    global $db;//, $order;
     if ($restock == 'on') {
       $order = $db->Execute("select products_id, products_quantity
                              from " . TABLE_ORDERS_PRODUCTS . "

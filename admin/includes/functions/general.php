@@ -5,7 +5,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version GIT: $Id: Author: DrByte  Tue Aug 28 17:40:54 2012 -0400 Modified in v1.5.1 $
- * Updated for Stock by Attributes 1.5.1.2
+ * Updated for Stock by Attributes 1.5.3.1
  */
 
 ////
@@ -1540,8 +1540,7 @@ while (!$chk_sale_categories_all->EOF) {
   }  
   
   function zen_remove_order($order_id, $restock = false) {
-    /* START STOCK BY ATTRIBUTES */
-    global $db;  // mc12345678 (Why global on $order? It isn't used in ZC, is there something that follows the call to this that needs it?)
+    global $db;//, $order;
     if ($restock == 'on') {
       $order = $db->Execute("select products_id, products_quantity
                              from " . TABLE_ORDERS_PRODUCTS . "
@@ -2362,7 +2361,9 @@ function zen_copy_products_attributes($products_id_from, $products_id_to) {
     }
 
     $db->Execute("delete from " . TABLE_PRODUCTS_ATTRIBUTES . " where products_id = '" . (int)$delete_product_id . "'");
+	/* START STOCK BY ATTRIBUTES */
     $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " where products_id = '" . (int)$delete_product_id . "'");
+	/* END STOCK BY ATTRIBUTES */
 }
 
 

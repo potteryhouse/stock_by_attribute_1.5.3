@@ -95,7 +95,8 @@ function cartProductCount($products_id){
   	$customid_model_query = null;
   	$customid_query = null;
   	$products_id = zen_get_prid($products_id);
-  
+	$customid = null;
+	
   	// check if there are attributes for this product
  	$stock_has_attributes = $db->Execute('select products_attributes_id 
   											from '.TABLE_PRODUCTS_ATTRIBUTES.' 
@@ -150,10 +151,8 @@ function cartProductCount($products_id){
 		  							from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' 
 		  							where products_id = '.(int)$products_id.' 
 		  							and stock_attributes in ("'.$stock_attributes.'");';  
-  		$customid = $db->Execute($customid_query); //moved to inside this loop as for some reason it has made
-			// a difference in the code where there would be an error with it below...
+  		$customid = $db->Execute($customid_query);
   		}
-  		
   		
   		if($customid->fields['products_model']){
   		

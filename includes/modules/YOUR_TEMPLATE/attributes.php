@@ -23,10 +23,10 @@ $show_attributes_qty_prices_description = 'false';
 //limit to 1 for performance when processing larger tables
 //gets the number of associated attributes
 $sql = "select count(*) as total
-          from " . TABLE_PRODUCTS_OPTIONS . " popt 
-			left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib ON (popt.products_options_id = patrib.options_id)
-          where    patrib.products_id='" . (int)$_GET['products_id'] . "'
-            and      popt.language_id = '" . (int)$_SESSION['languages_id'] . "'" .
+          from " . TABLE_PRODUCTS_OPTIONS . " po 
+			left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa ON (po.products_options_id = pa.options_id)
+          where    pa.products_id='" . (int)$_GET['products_id'] . "'
+            and      po.language_id = '" . (int)$_SESSION['languages_id'] . "'" .
             " limit 1";
 
 $pr_attr = $db->Execute($sql);
@@ -34,24 +34,24 @@ $pr_attr = $db->Execute($sql);
 //only continue if there are attributes
 if ($pr_attr->fields['total'] > 0) {
 			  //LPAD - Return the string argument, left-padded with the specified string 
-			  //example: LPAD(popt.products_options_sort_order,11,"0") the field is 11 digits, and is left padded with 0
+			  //example: LPAD(po.products_options_sort_order,11,"0") the field is 11 digits, and is left padded with 0
               if (PRODUCTS_OPTIONS_SORT_ORDER=='0') {
-                $options_order_by= ' order by LPAD(popt.products_options_sort_order,11,"0")';
+                $options_order_by = ' order by LPAD(po.products_options_sort_order,11,"0")';
               } else {
-                $options_order_by= ' order by popt.products_options_name';
+                $options_order_by = ' order by po.products_options_name';
               }
 
               //get the option/attribute list
-              $sql = "select distinct popt.products_options_id, popt.products_options_name, popt.products_options_sort_order,
-                              popt.products_options_type, popt.products_options_length, popt.products_options_comment,
-                              popt.products_options_size,
-                              popt.products_options_images_per_row,
-                              popt.products_options_images_style,
-                              popt.products_options_rows
-              from        " . TABLE_PRODUCTS_OPTIONS . " popt
-              left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib ON (patrib.options_id = popt.products_options_id)
-              where           patrib.products_id='" . (int)$_GET['products_id'] . "'             
-              and             popt.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
+              $sql = "select distinct po.products_options_id, po.products_options_name, po.products_options_sort_order,
+                              po.products_options_type, po.products_options_length, po.products_options_comment,
+                              po.products_options_size,
+                              po.products_options_images_per_row,
+                              po.products_options_images_style,
+                              po.products_options_rows
+              from        " . TABLE_PRODUCTS_OPTIONS . " po
+              left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa ON (pa.options_id = po.products_options_id)
+              where           pa.products_id='" . (int)$_GET['products_id'] . "'             
+              and             po.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
               $options_order_by;
 
               $products_options_names = $db->Execute($sql);
@@ -85,17 +85,22 @@ if ($pr_attr->fields['total'] > 0) {
 
                 $sql = "select	pov.products_options_values_id,
 			                    pov.products_options_values_name,
-			                    pa.*, p.products_quantity
-                		
+			                    pa.*, p.products_quantity, 
+                				pas.stock_id as pasid, pas.products_id, 
+                				pas.stock_attributes, pas.quantity as pasqty, pas.sort,  pas.customid
+
 		              from      " . TABLE_PRODUCTS_ATTRIBUTES . " pa
 		              left join " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov on (pa.options_values_id = pov.products_options_values_id)
 		              left join " . TABLE_PRODUCTS . " p on (pa.products_id = p.products_id)
-		              
+                
+		              left join " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " pas on 
+		              (p.products_id = pas.products_id and pa.products_attributes_id = pas.stock_attributes )
 		              where pa.products_id = '" . (int)$_GET['products_id'] . "'
 		              and   pa.options_id  = '" . (int)$products_options_names->fields['products_options_id'] . "'
 		              and   pov.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
                 $order_by;
 
+			
                 $products_options = $db->Execute($sql);
 
                 $products_options_value_id = '';
@@ -120,23 +125,23 @@ if ($pr_attr->fields['total'] > 0) {
 				// START "Stock by Attributes"  
 				//echo '<br />'.zen_get_products_stock($_GET['products_id'], $products_options_names->fields['products_options_id']). '<br />';//debug line
 				//use this to get quantity of each option //, pas.primary_attribute_id, pas.other_attributes_id 
-				$sql2 = "SELECT pas.stock_id, pas.quantity, pas.customid 
+				$sql2 = "SELECT pas.stock_id as pasid, pas.quantity as pasqty, pas.customid 
 						FROM " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " pas
 						WHERE pas.products_id = '" . (int)$_GET['products_id'] . "'
 						AND pas.stock_attributes = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
 				$qtyeachoption = $db->Execute($sql2);
 
 				//used to find if an attribute is read-only
-				$sqlRO = "select patrib.attributes_display_only
-              			from " . TABLE_PRODUCTS_OPTIONS . " popt
-              			left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib on (patrib.options_id = popt.products_options_id)
-              			where patrib.products_id='" . (int)$_GET['products_id'] . "'
-               			and patrib.products_attributes_id = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
+				$sqlRO = "select pa.attributes_display_only
+              			from " . TABLE_PRODUCTS_OPTIONS . " po
+              			left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa on (pa.options_id = po.products_options_id)
+              			where pa.products_id='" . (int)$_GET['products_id'] . "'
+               			and pa.products_attributes_id = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
 				$products_options_READONLY = $db->Execute($sqlRO);
 				
-				//echo 'ID: ' . $products_options->fields["products_attributes_id"] . ' Stock ID: ' . $qtyeachoption->fields['stock_id'] . ' QTY: ' . $qtyeachoption->fields['quantity'] . '<br />';//debug line
+				//echo 'ID: ' . $products_options->fields["products_attributes_id"] . ' Stock ID: ' . $qtyeachoption->fields['pasid'] . ' QTY: ' . $qtyeachoption->fields['pasqty'] . '<br />';//debug line
 				//add out of stock text based on qty
-				if( $qtyeachoption->fields['quantity'] < 1 && STOCK_CHECK == 'true' &&  $qtyeachoption->fields['stock_id'] > 0 ){
+				if( $products_options->fields['pasqty'] < 1 && STOCK_CHECK == 'true' &&  $products_options->fields['pasid'] > 0 ){
 					//test, only applicable to products with-out the read-only attribute set
 					if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
 						$products_options->fields['products_options_values_name'] = $products_options->fields['products_options_values_name'] . PWA_OUT_OF_STOCK;
@@ -155,17 +160,17 @@ if ($pr_attr->fields['total'] > 0) {
 				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_READONLY) {
 				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_SELECT_SBA) {
 				
-					if( STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $qtyeachoption->fields['quantity'] > 0 ){
+					if( STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $products_options->fields['pasqty'] > 0 ){
 						//test, only applicable to products with-out the read-only attribute set
 						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							$PWA_STOCK_QTY = PWA_STOCK_QTY . $qtyeachoption->fields['quantity'] . ' ';
+							$PWA_STOCK_QTY = PWA_STOCK_QTY . $products_options->fields['pasqty'] . ' ';
 							//show custom ID if flag set to true
-							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($qtyeachoption->fields['customid'])){
-								$PWA_STOCK_QTY .= ' (' . $qtyeachoption->fields['customid'] . ') ';
+							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
+								$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
 							}
 						}
 					}
-					elseif(STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $qtyeachoption->fields['quantity'] < 1 && $qtyeachoption->fields['stock_id'] < 1 ){
+					elseif(STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $products_options->fields['pasqty'] < 1 && $products_options->fields['pasid'] < 1 ){
 						//test, only applicable to products with-out the read-only attribute set
 						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
 							//use the qty from the product, unless it is 0, then set to out of stock.
@@ -177,16 +182,16 @@ if ($pr_attr->fields['total'] > 0) {
 							}
 							
 							//show custom ID if flag set to true
-							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($qtyeachoption->fields['customid'])){
-								$PWA_STOCK_QTY .= ' (' . $qtyeachoption->fields['customid'] . ') ';
+							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
+								$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
 							}
 						}
 					}
-					elseif(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($qtyeachoption->fields['customid'])){
+					elseif(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
 						//show custom ID if flag set to true
 						//test, only applicable to products with-out the read-only attribute set
 						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							$PWA_STOCK_QTY .= ' (' . $qtyeachoption->fields['customid'] . ') ';
+							$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
 						}
 					}
 					
@@ -355,14 +360,14 @@ if ($pr_attr->fields['total'] > 0) {
 
                     // START "Stock by Attributes"
 					//move default selected attribute if attribute is out of stock and check out is not allowed
-					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] > 0) ){
+					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] > 0) ){
                     	$selected_attribute = true;
 						$moveSelectedAttribute = false;	
                     }
                     $disablebackorder = null;
 					//disable radio and disable default selected
-                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] == 0 && !empty($qtyeachoption->fields['stock_id']) )
-                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($qtyeachoption->fields['stock_id']) ) 
+                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] == 0 && !empty($products_options->fields['pasid']) )
+                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($products_options->fields['pasid']) ) 
                       ){//|| $products_options_READONLY->fields['attributes_display_only'] == 1
                     		 
 						if( $selected_attribute == true ){
@@ -472,14 +477,14 @@ if ($pr_attr->fields['total'] > 0) {
                     
                     // START "Stock by Attributes"
 					//move default selected attribute if attribute is out of stock and check out is not allowed
-					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] > 0) ){
+					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] > 0) ){
                     	$selected_attribute = true;
 						$moveSelectedAttribute = false;	
                     }
                     $disablebackorder = null;
 					//disable radio and disable default selected
-                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] == 0 && !empty($qtyeachoption->fields['stock_id']) )
-                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($qtyeachoption->fields['stock_id']) ) 
+                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] == 0 && !empty($products_options->fields['pasid']) )
+                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($products_options->fields['pasid']) ) 
                       ){//|| $products_options_READONLY->fields['attributes_display_only'] == 1
                     	
                     	if( $selected_attribute == true ){
@@ -558,7 +563,7 @@ if ($pr_attr->fields['total'] > 0) {
                   // text
                   if (($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_TEXT)) {
                     //CLR 030714 Add logic for text option
-                    //            $products_attribs_query = zen_db_query("select distinct patrib.options_values_price, patrib.price_prefix from " . TABLE_PRODUCTS_ATTRIBUTES . " patrib where patrib.products_id='" . (int)$_GET['products_id'] . "' and patrib.options_id = '" . $products_options_name['products_options_id'] . "'");
+                    //            $products_attribs_query = zen_db_query("select distinct pa.options_values_price, pa.price_prefix from " . TABLE_PRODUCTS_ATTRIBUTES . " pa where pa.products_id='" . (int)$_GET['products_id'] . "' and pa.options_id = '" . $products_options_name['products_options_id'] . "'");
                     //            $products_attribs_array = zen_db_fetch_array($products_attribs_query);
                     if ($_POST['id']) {
                       reset($_POST['id']);

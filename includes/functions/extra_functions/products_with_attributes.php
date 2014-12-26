@@ -11,16 +11,20 @@
  * Updated for Stock by Attributes 1.5.3.1
  */
 
-//test for multiple entry of same product in shopping cart
+//test for multiple entry of same product in customer's shopping cart
 function cartProductCount($products_id){
 	
 	global $db;
 	$products_id = zen_get_prid($products_id);
-	
-	$productCount = $db->Execute('select products_id
+
+  $query = 'select products_id
   									from ' . TABLE_CUSTOMERS_BASKET . '
-  									where products_id like "' . (int)$products_id . ':%"');
-	
+  									where products_id like ":products_id::%" and customers_basket_id = :cust_bask_id:';
+  $query = $db->bindVars($query, ':products_id:', $products_id, 'integer');
+  $query = $db->bindVars($query, ':cust_bask_id:', $_SESSION['cart']->cartID, 'integer');
+          
+	$productCount = $db->Execute($query);
+          	
 	return $productCount->RecordCount();
 }
 
@@ -71,7 +75,7 @@ function cartProductCount($products_id){
       	$field .= ' data-src="' . $options_menu_images[$i]['src'] . '"';
       }
       
-      //close tag and add displyed text
+      //close tag and display text
       $field .= '>' . zen_output_string($values[$i]['text'], array('"' => '&quot;', '\'' => '&#039;', '<' => '&lt;', '>' => '&gt;')) . '</option>' . "\n";
     }
     
@@ -91,7 +95,8 @@ function cartProductCount($products_id){
   	$customid_model_query = null;
   	$customid_query = null;
   	$products_id = zen_get_prid($products_id);
-  
+	$customid = null;
+	
   	// check if there are attributes for this product
  	$stock_has_attributes = $db->Execute('select products_attributes_id 
   											from '.TABLE_PRODUCTS_ATTRIBUTES.' 
@@ -133,12 +138,7 @@ function cartProductCount($products_id){
   					$attributes_new->MoveNext();
   				}
 
-  				if(sizeof($stock_attributes) > 1){
-  					$stock_attributes = implode(',',$stock_attributes);
-  					$stock_attributes = str_ireplace(',', '","', $stock_attributes);					
-  				} else {
-  					$stock_attributes = $stock_attributes[0];
-  				}
+				$stock_attributes = implode('","',$stock_attributes);
   			}
   			
   			//Get product model
@@ -153,7 +153,6 @@ function cartProductCount($products_id){
 		  							and stock_attributes in ("'.$stock_attributes.'");';  
   		$customid = $db->Execute($customid_query);
   		}
-  		
   		
   		if($customid->fields['products_model']){
   		

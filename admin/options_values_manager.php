@@ -33,7 +33,7 @@
   $languages = zen_get_languages();
   for ($i=0, $n=sizeof($languages); $i<$n; $i ++) {
     if ((int)$languages[$i]['id'] > 0 && !in_array((int)$languages[$i]['id'], $ary)) {
-      $db->Execute("INSERT INTO products_options_values (products_options_values_id, language_id, products_options_values_name) VALUES ((int)PRODUCTS_OPTIONS_VALUES_TEXT_ID, " . (int)$languages[$i]['id'] . ", 'TEXT')");
+      $db->Execute("INSERT INTO " . TABLE_PRODUCTS_OPTIONS_VALUES . " (products_options_values_id, language_id, products_options_values_name) VALUES (" . (int)PRODUCTS_OPTIONS_VALUES_TEXT_ID . ", " . (int)$languages[$i]['id'] . ", 'TEXT')");
     }
   }
 
@@ -851,7 +851,7 @@ function go_option() {
       }
 
       $inputs = '';
-      $inputs = '';
+      $inputs2 = '';
       for ($i = 0, $n = sizeof($languages); $i < $n; $i ++) {
         $inputs .= $languages[$i]['code'] . ':&nbsp;<input type="text" name="value_name[' . $languages[$i]['id'] . ']" ' . zen_set_field_length(TABLE_PRODUCTS_OPTIONS_VALUES, 'products_options_values_name', 50) . '>&nbsp;<br />';
       }

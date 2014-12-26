@@ -254,7 +254,7 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
                         // delete stock attribute
                         $db->Execute("DELETE FROM " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " WHERE stock_id = " . $attribute_products->fields['stock_id'] . " LIMIT 1;");
                       } else { 
-                        $attributes_output[] = '<strong>'.$stock_attribute['option'].':</strong> '.$stock_attribute['value'].'<br/>';
+                        $attributes_output[] = '<strong>'.$stock_attribute['option'].':</strong> '.$stock_attribute['value'].'<br />';
                       }
                   }
                   sort($attributes_output);

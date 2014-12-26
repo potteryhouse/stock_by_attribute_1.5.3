@@ -382,7 +382,7 @@ function couponpopupWindow(url) {
   echo HEADING_TITLE_SEARCH_DETAIL . ' ' . zen_draw_input_field('search') . zen_hide_session_id();
   if (isset($_GET['search']) && zen_not_null($_GET['search'])) {
     $keywords = zen_db_input(zen_db_prepare_input($_GET['search']));
-    echo '<br/ >' . TEXT_INFO_SEARCH_DETAIL_FILTER . $keywords;
+    echo '<br />' . TEXT_INFO_SEARCH_DETAIL_FILTER . $keywords;
   }
 ?>
             </td>
@@ -402,7 +402,7 @@ function couponpopupWindow(url) {
   echo HEADING_TITLE_SEARCH_DETAIL_ORDERS_PRODUCTS . ' ' . zen_draw_input_field('search_orders_products') . zen_hide_session_id();
   if (isset($_GET['search_orders_products']) && zen_not_null($_GET['search_orders_products'])) {
     $keywords_orders_products = zen_db_input(zen_db_prepare_input($_GET['search_orders_products']));
-    echo '<br/ >' . TEXT_INFO_SEARCH_DETAIL_FILTER_ORDERS_PRODUCTS . zen_db_prepare_input($keywords_orders_products);
+    echo '<br />' . TEXT_INFO_SEARCH_DETAIL_FILTER_ORDERS_PRODUCTS . zen_db_prepare_input($keywords_orders_products);
   }
 ?>
             </td>
@@ -599,7 +599,7 @@ function couponpopupWindow(url) {
 				}
 			}
 		  //"Stock by Attributes" add custom ID to display
-          echo '<br /><nobr><small>&nbsp;<i> - ' . $order->products[$i]['attributes'][$j]['option'] . ': ' . nl2br(zen_output_string_protected($order->products[$i]['attributes'][$j]['value'])) . ' ' . $customid . ' ';
+          echo '<br /><nobr><small>&nbsp;<i> - ' . $order->products[$i]['attributes'][$j]['option'] . ': ' . nl2br(zen_output_string_protected($order->products[$i]['attributes'][$j]['value'])) . ' (' . $customid . ') ';
 		  // END "Stock by Attributes"
           if ($order->products[$i]['attributes'][$j]['price'] != '0') echo ' (' . $order->products[$i]['attributes'][$j]['prefix'] . $currencies->format($order->products[$i]['attributes'][$j]['price'] * $order->products[$i]['qty'], true, $order->info['currency'], $order->info['currency_value']) . ')';
           if ($order->products[$i]['attributes'][$j]['product_attribute_is_free'] == '1' and $order->products[$i]['product_is_free'] == '1') echo TEXT_INFO_ATTRIBUTE_FREE;
@@ -949,7 +949,7 @@ if (($_GET['page'] == '' or $_GET['page'] <= 1) and $_GET['oID'] != '') {
                         echo '<a href="' . zen_href_link(FILENAME_ORDERS, '', 'NONSSL') . '">' . zen_image_button('button_reset.gif', IMAGE_RESET) . '</a>';
                         if (isset($_GET['search']) && zen_not_null($_GET['search'])) {
                           $keywords = zen_db_input(zen_db_prepare_input($_GET['search']));
-                          echo '<br/ >' . TEXT_INFO_SEARCH_DETAIL_FILTER . $keywords;
+                          echo '<br />' . TEXT_INFO_SEARCH_DETAIL_FILTER . $keywords;
                         }
                       ?>
                     </td>

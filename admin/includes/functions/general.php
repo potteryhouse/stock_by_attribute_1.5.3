@@ -5,7 +5,7 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version GIT: $Id: Author: DrByte  Tue Aug 28 17:40:54 2012 -0400 Modified in v1.5.1 $
- * Updated for Stock by Attributes 1.5.1.2
+ * Updated for Stock by Attributes 1.5.3.1
  */
 
 ////
@@ -1440,6 +1440,8 @@ while (!$chk_sale_categories_all->EOF) {
     $db->Execute("delete from " . TABLE_COUPON_RESTRICT . "
                   where product_id = '" . (int)$product_id . "'");
 
+    $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
+                  where products_id = '" . (int)$product_id . "'");
   }
 
   function zen_products_attributes_download_delete($product_id) {
@@ -1488,7 +1490,7 @@ while (!$chk_sale_categories_all->EOF) {
   } */
 
   function zen_remove_order($order_id, $restock = false) {
-    global $db, $order;
+    global $db;//, $order;
     if ($restock == 'on') {
       $order = $db->Execute("select products_id, products_quantity
                              from " . TABLE_ORDERS_PRODUCTS . "
@@ -1743,7 +1745,7 @@ while (!$chk_sale_categories_all->EOF) {
       $tax_multiplier = 0;
       while (!$tax->EOF) {
         $tax_multiplier += $tax->fields['tax_rate'];
-    $tax->MoveNext();
+		$tax->MoveNext();
       }
       return $tax_multiplier;
     } else {
@@ -2308,6 +2310,9 @@ function zen_copy_products_attributes($products_id_from, $products_id_to) {
     }
 
     $db->Execute("delete from " . TABLE_PRODUCTS_ATTRIBUTES . " where products_id = '" . (int)$delete_product_id . "'");
+	/* START STOCK BY ATTRIBUTES */
+    $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " where products_id = '" . (int)$delete_product_id . "'");
+	/* END STOCK BY ATTRIBUTES */
 }
 
 
@@ -2678,7 +2683,7 @@ function zen_copy_products_attributes($products_id_from, $products_id_to) {
 
     $sql = "select type_handler from " . TABLE_PRODUCT_TYPES . " where type_id = '" . (int)$product_type . "'";
     $handler = $db->Execute($sql);
-  return $handler->fields['type_handler'];
+	return $handler->fields['type_handler'];
   }
 
 /*

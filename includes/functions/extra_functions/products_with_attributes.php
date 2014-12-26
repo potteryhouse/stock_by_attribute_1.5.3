@@ -50,11 +50,11 @@ function cartProductCount($products_id){
   					
   	$field .= '<select name="' . zen_output_string($name) . '" onclick=""';
 
-    if (zen_not_null($parameters)) $field .= ' ' . $parameters;
+    if (zen_not_null($parameters)) {$field .= ' ' . $parameters;}
 
     $field .= '>' . "\n";
 
-    if (empty($default) && isset($GLOBALS[$name]) && is_string($GLOBALS[$name]) ) $default = stripslashes($GLOBALS[$name]);
+    if (empty($default) && isset($GLOBALS[$name]) && is_string($GLOBALS[$name]) ) {$default = stripslashes($GLOBALS[$name]);}
 
     for ($i=0, $n=sizeof($values); $i<$n; $i++) {
       $field .= '  <option value="' . zen_output_string($values[$i]['id']) . '"';
@@ -71,7 +71,7 @@ function cartProductCount($products_id){
       	$field .= ' data-src="' . $options_menu_images[$i]['src'] . '"';
       }
       
-      //close tag and add displaed text
+      //close tag and add displyed text
       $field .= '>' . zen_output_string($values[$i]['text'], array('"' => '&quot;', '\'' => '&#039;', '<' => '&lt;', '>' => '&gt;')) . '</option>' . "\n";
     }
     
@@ -91,7 +91,8 @@ function cartProductCount($products_id){
   	$customid_model_query = null;
   	$customid_query = null;
   	$products_id = zen_get_prid($products_id);
-  
+	$customid = null;
+	
   	// check if there are attributes for this product
  	$stock_has_attributes = $db->Execute('select products_attributes_id 
   											from '.TABLE_PRODUCTS_ATTRIBUTES.' 
@@ -150,9 +151,9 @@ function cartProductCount($products_id){
 		  							from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' 
 		  							where products_id = '.(int)$products_id.' 
 		  							and stock_attributes in ("'.$stock_attributes.'");';  
+  		$customid = $db->Execute($customid_query);
   		}
   		
-  		$customid = $db->Execute($customid_query);
   		if($customid->fields['products_model']){
   		
 	  		//Test to see if a custom ID exists

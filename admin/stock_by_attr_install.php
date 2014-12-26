@@ -213,7 +213,7 @@ function dropSBATable(){
 	/*
 	 * DROP TABLE IF EXISTS 'products_with_attributes_stock';
 	 */
-	array_push($resultMmessage, '<br />Clean-Up, Removing Table products_with_attributes_stock: ');
+	array_push($resultMmessage, '<br />Clean-Up, Removing Table products_with_attributes_stock ');
 	
 	$sql = "DROP TABLE IF EXISTS ".TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK;
 	$result = $db->Execute($sql);
@@ -240,8 +240,8 @@ function insertSBAconfigurationMenu(){
 	$sql = "INSERT INTO `".TABLE_ADMIN_PAGES."` (page_key, language_key, main_page, page_params, menu_key, display_on_menu, sort_order) 
 			VALUES 
 			('productsWithAttributesStockSetup', 'BOX_CONFIGURATION_PRODUCTS_WITH_ATTRIBUTES_STOCK_SETUP', 'FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK_SETUP', '', 'configuration', 'Y', ".$result.")";
-	$result = $db->Execute($sql);
-	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStockSetup: ' . $result);
+	$db->Execute($sql);
+	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStockSetup ' );
 	
 	return;
 }
@@ -264,8 +264,8 @@ function insertSBAadminPages(){
 	$sql = "INSERT INTO `".TABLE_ADMIN_PAGES."` (page_key, language_key, main_page, page_params, menu_key, display_on_menu, sort_order)
 			VALUES
 			('productsWithAttributesStock', 'BOX_CATALOG_PRODUCTS_WITH_ATTRIBUTES_STOCK', 'FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK', '', 'catalog', 'Y', ".$result.")";
-	$result = $db->Execute($sql);
-	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStock: ' . $result);
+	$db->Execute($sql);
+	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStock ' );
 
 	return;
 }
@@ -287,8 +287,8 @@ function insertSBAproductsOptionsTypes(){
 	$sql = "INSERT INTO ".TABLE_PRODUCTS_OPTIONS_TYPES." (`products_options_types_id`, `products_options_types_name`) 
 			VALUES (".$resultGID.", 'SBA Select List (Dropdown) Basic');";
 
-	$result = $db->Execute($sql);
-	array_push($resultMmessage, 'Inserted into products_options_types SBA Select List (Dropdown) Basic: ' . $result);
+	$result = $db->Execute($sql);//Result is used in test below
+	array_push($resultMmessage, 'Inserted into products_options_types SBA Select List (Dropdown) Basic ' );
 
 	if( $result != "1" ){
 		$failed = true;
@@ -307,8 +307,8 @@ function insertSBAproductsOptionsTypes(){
 		 'Numeric value of the radio button product option type',
 		 '6', 0, now(), now(), NULL, NULL);";
 		
-		$result = $db->Execute($sql);
-		array_push($resultMmessage, 'Inserted PRODUCTS_OPTIONS_TYPE_SELECT_SBA into configuration: ' . $result);
+		$result = $db->Execute($sql);//Result is used in test below
+		array_push($resultMmessage, 'Inserted PRODUCTS_OPTIONS_TYPE_SELECT_SBA into configuration ' );
 		
 		if( $result != "1" ){
 			$failed = true;
@@ -434,7 +434,7 @@ function addSBAtable(){
 		UNIQUE INDEX `customid1` (`customid`)
 		)");
 	
-		array_push($resultMmessage, '<br />Added Table products_with_attributes_stock: ' . $result);
+		array_push($resultMmessage, '<br />Added Table products_with_attributes_stock ' );
 	}
 	else{
 		//Alter / upgrade existing database table
@@ -523,8 +523,8 @@ function alterSBAtableUniqueIndex(){
 		$num_rows = rtrim($num_rows, ', ');
 		if(empty($num_rows)){
 			$sql = "ALTER TABLE " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK." ADD UNIQUE INDEX product_attribute1 (`products_id`, `stock_attributes`);";
-			$result = $db->Execute($sql);
-			array_push($resultMmessage, 'Altered Table products_with_attributes_stock to add UNIQUE INDEX (products_id, stock_attributes): ' . $result);
+			$db->Execute($sql);
+			array_push($resultMmessage, 'Altered Table products_with_attributes_stock to add UNIQUE INDEX (products_id, stock_attributes): ' );
 		}
 	}
 	
@@ -643,8 +643,8 @@ function installOptionalSQL1(){
 				ON DUPLICATE KEY UPDATE
 					`products_id` = ".TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.".products_id;";
 		
-		$result = $db->Execute($sql);
-		array_push($resultMmessage, 'Optional SQL file result: ' . $result);
+		$db->Execute($sql);
+		array_push($resultMmessage, 'Optional SQL file result ' );
 	}
 	else{
 		array_push($resultMmessage, 'Optional SQL file result: Did NOT run, table does not exit.');
@@ -841,7 +841,9 @@ function checkSBAtable($table = null, $field = null, $display = true) {
 							AND COLUMN_NAME like '%".$field."%';");
 	
 	foreach($check as $row){
-		$result .= $row['COLUMN_NAME'] . ' | ';
+		if($row['COLUMN_NAME']){
+			$result .= $row['COLUMN_NAME'] . '  ';
+		}
 	}
 
 	//limits the number of time this gets displayed, since it is call many times

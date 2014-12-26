@@ -202,6 +202,7 @@ function removeSBAadminPages(){
 	$sql = "DELETE FROM`".TABLE_ADMIN_PAGES."` WHERE page_key = 'productsWithAttributesStockSetup'";
 	$result = $db->Execute($sql);
 	array_push($resultMmessage, 'Deleted from admin_pages productsWithAttributesStockSetup: ' . $result);
+
 	
 	return;
 }
@@ -256,8 +257,8 @@ function insertSBAconfigurationMenu(){
 	$sql = "INSERT INTO `".TABLE_ADMIN_PAGES."` (page_key, language_key, main_page, page_params, menu_key, display_on_menu, sort_order) 
 			VALUES 
 			('productsWithAttributesStockSetup', 'BOX_CONFIGURATION_PRODUCTS_WITH_ATTRIBUTES_STOCK_SETUP', 'FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK_SETUP', '', 'configuration', 'Y', ".$result.")";
-	$result = $db->Execute($sql);
-	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStockSetup: ' . $result);
+	$db->Execute($sql);
+	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStockSetup ' );
 	
 	return;
 }
@@ -280,8 +281,8 @@ function insertSBAadminPages(){
 	$sql = "INSERT INTO `".TABLE_ADMIN_PAGES."` (page_key, language_key, main_page, page_params, menu_key, display_on_menu, sort_order)
 			VALUES
 			('productsWithAttributesStock', 'BOX_CATALOG_PRODUCTS_WITH_ATTRIBUTES_STOCK', 'FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK', '', 'catalog', 'Y', ".$result.")";
-	$result = $db->Execute($sql);
-	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStock: ' . $result);
+	$db->Execute($sql);
+	array_push($resultMmessage, 'Inserted into admin_pages productsWithAttributesStock ' );
 
 	return;
 }
@@ -303,12 +304,13 @@ function insertSBAproductsOptionsTypes(){
 	$sql = "INSERT INTO ".TABLE_PRODUCTS_OPTIONS_TYPES." (`products_options_types_id`, `products_options_types_name`) 
 			VALUES (".$resultGID.", 'SBA Select List (Dropdown) Basic');";
 
-	$result = $db->Execute($sql);
+	$result = $db->Execute($sql);//Result is used in test below
 
 	if( $result != "1" ){
 		$failed = true;
-	}
-	array_push($resultMmessage, 'Inserted into products_options_types SBA Select List (Dropdown) Basic: ' . $result);
+	} else {
+    array_push($resultMmessage, 'Inserted into products_options_types SBA Select List (Dropdown) Basic: ' . $result);
+  }
 	
 	//error test, and prevent a duplicate entry
 	if( $result == "1" && $result->fields['products_options_types_name'] !=  'Selection list product option type (SBA)' ){
@@ -323,12 +325,13 @@ function insertSBAproductsOptionsTypes(){
 		 'Numeric value of the radio button product option type',
 		 '6', 0, now(), now(), NULL, NULL);";
 		
-		$result = $db->Execute($sql);
+		$result = $db->Execute($sql);//Result is used in test below
 		
 		if( $result != "1" ){
 			$failed = true;
-		}
-		array_push($resultMmessage, 'Inserted PRODUCTS_OPTIONS_TYPE_SELECT_SBA into configuration: ' . $result);
+		} else {
+      array_push($resultMmessage, 'Inserted PRODUCTS_OPTIONS_TYPE_SELECT_SBA into configuration: ' . $result);
+    }
 
 	}
 	
@@ -706,11 +709,11 @@ function installOptionalSQL1(){
 				ON DUPLICATE KEY UPDATE
 					`products_id` = ".TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.".products_id;";
 		
-		$result = $db->Execute($sql);
-		array_push($resultMmessage, 'Optional SQL file result: ' . $result);
+		$db->Execute($sql);
+		array_push($resultMmessage, 'Optional SQL file result ' );
 	}
 	else{
-		array_push($resultMmessage, 'Optional SQL file result: Did NOT run, table does not exit.');
+		array_push($resultMmessage, 'Optional SQL file result: Did NOT run, table does not exist.');
 		$failed = true;
 	}
 	return;
@@ -904,7 +907,9 @@ function checkSBAtable($table = null, $field = null, $display = true) {
 							AND COLUMN_NAME like '%".$field."%'");
 	
 	foreach($check as $row){
-		$result .= $row['COLUMN_NAME'] . ' | ';
+		if($row['COLUMN_NAME']){
+			$result .= $row['COLUMN_NAME'] . '  ';
+		}
 	}
 
 	//limits the number of time this gets displayed, since it is call many times

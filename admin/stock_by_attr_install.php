@@ -1187,9 +1187,6 @@ function removeSBAfiles(){
 				    <li>admin/products_with_attributes_stock.php</li>
 					<li>admin/products_with_attributes_stock_ajax.php</li>
 					<li>admin/products_with_attributes_stock_ajax.js</li>
-					<li>admin/attributes_controller.php</li>
-					<li>admin/options_name_manager.php</li>
-					<li>admin/options_values_manager.php</li>
 					<li>admin/includes/products_with_attributes_stock_ajax.css</li>
 					<li>admin/includes/classes/products_with_attributes_stock.php</li>
 					<li>admin/includes/extra_datafiles/products_with_attributes_stock.php</li>
@@ -1197,10 +1194,9 @@ function removeSBAfiles(){
 					<li>admin/includes/languages/english/extra_definitions/products_with_attributes.php</li>
 				  </ul>
 				  <ul>
-				  	<li>/includes/auto_loaders/config.products_with_attributes_stock.php</li>
-					<li>/includes/classes/observers/class.products_with_attributes_stock.php</li>
+				  	<li>includes/auto_loaders/config.products_with_attributes_stock.php</li>
+					<li>includes/classes/observers/class.products_with_attributes_stock.php</li>
 					<li>includes/extra_datafiles/products_with_attributes_stock_database_tables.php</li>
-					<li>/includes/modules/pages/checkout_success/header_php_sba.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>
 					<li>includes/languages/english/extra_definitions/products_with_attributes.php</li>
 					<li>includes/templates/YOUR_TEMPLATE/jscript/jquery.form.js</li>
@@ -1211,6 +1207,9 @@ function removeSBAfiles(){
 				<p><h1>Revert CORE Files that were changed</h1>
 				<h3>Core Zen Cart files need to have the SBA changes removed. Update files as applicable by removing the SBA modification.</h3>
 				  <ul>
+				  	<li>admin/attributes_controller.php</li>
+					<li>admin/options_name_manager.php</li>
+					<li>admin/options_values_manager.php</li>
 					<li>admin/invoice.php</li>
 				    <li>admin/orders.php</li>
 					<li>admin/packingslip.php</li>
@@ -1218,6 +1217,7 @@ function removeSBAfiles(){
 					<li>admin/includes/classes/order.php</li>
 				  </ul>
 				  <ul>
+					<li>includes/modules/pages/checkout_success/header_php_sba.php</li>
 				    <li>includes/classes/order.php</li>
 				    <li>includes/functions/functions_lookups.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>
@@ -1270,9 +1270,6 @@ function instructionsSBA(){
 				    <li>admin/products_with_attributes_stock.php</li>
 					<li>admin/products_with_attributes_stock_ajax.php</li>
 					<li>admin/products_with_attributes_stock_ajax.js</li>
-					<li>admin/attributes_controller.php</li>
-					<li>admin/options_name_manager.php</li>
-					<li>admin/options_values_manager.php</li>
 					<li>admin/includes/products_with_attributes_stock_ajax.css</li>
 					<li>admin/includes/classes/products_with_attributes_stock.php</li>
 					<li>admin/includes/extra_datafiles/products_with_attributes_stock.php</li>
@@ -1280,9 +1277,8 @@ function instructionsSBA(){
 					<li>admin/includes/languages/english/extra_definitions/products_with_attributes.php</li>
 				  </ul>
 				  <ul>
-  				  	<li>/includes/auto_loaders/config.products_with_attributes_stock.php</li>
-					<li>/includes/classes/observers/class.products_with_attributes_stock.php</li>
-					<li>/includes/modules/pages/checkout_success/header_php_sba.php</li>
+  				  	<li>includes/auto_loaders/config.products_with_attributes_stock.php</li>
+					<li>includes/classes/observers/class.products_with_attributes_stock.php</li>
 					<li>includes/extra_datafiles/products_with_attributes_stock_database_tables.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>
 					<li>includes/languages/english/extra_definitions/products_with_attributes.php</li>
@@ -1295,6 +1291,9 @@ function instructionsSBA(){
 				<h3>These core Zen Cart files need to be modified for this add-on. 
 				    If other add-ons or customizations of the cart have been done since the Zen Cart installation or upgrade, Check whether they have changed any of the following files:</h3>
 				  <ul>
+					<li>admin/attributes_controller.php</li>
+					<li>admin/options_name_manager.php</li>
+					<li>admin/options_values_manager.php</li>
 					<li>admin/invoice.php</li>
 				    <li>admin/orders.php</li>
 					<li>admin/packingslip.php</li>
@@ -1302,6 +1301,7 @@ function instructionsSBA(){
 					<li>admin/includes/classes/order.php</li>
 				  </ul>
 				  <ul>
+					<li>includes/modules/pages/checkout_success/header_php_sba.php</li>
 				    <li>includes/classes/order.php</li>
 				    <li>includes/functions/functions_lookups.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>

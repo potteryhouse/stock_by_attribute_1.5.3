@@ -938,12 +938,13 @@ function checkSBAfileLocation(){
 	admin/attributes_controller.php
 	admin/options_name_manager.php
 	admin/options_values_manager.php
-	
-  	includes/auto_loaders/config.products_with_attributes_stock.php
+
+	includes/auto_loaders/config.products_with_attributes_stock.php
 	includes/classes/observers/class.products_with_attributes_stock.php
+	
 	includes/extra_datafiles/products_with_attributes_stock_database_tables.php
 	includes/modules/pages/checkout_success/header_php_sba.php
-			
+
 	includes/classes/order.php
 	includes/functions/functions_lookups.php
 	includes/functions/extra_functions/products_with_attributes.php
@@ -968,17 +969,13 @@ function checkSBAfileLocation(){
 		DIR_FS_ADMIN . 'products_with_attributes_stock.php',
 		DIR_FS_ADMIN . 'products_with_attributes_stock_ajax.php',
 		
-		DIR_FS_ADMIN . 'attributes_controller.php',
-		DIR_FS_ADMIN . 'options_name_manager.php',
-		DIR_FS_ADMIN . 'options_values_manager.php',
-		
 		DIR_FS_ADMIN . DIR_WS_INCLUDES . 'products_with_attributes_stock_ajax.css',
 		DIR_FS_ADMIN . DIR_WS_INCLUDES . 'classes/products_with_attributes_stock.php',
 		DIR_FS_ADMIN . DIR_WS_INCLUDES . 'extra_datafiles/products_with_attributes_stock.php',
 		DIR_FS_ADMIN . DIR_WS_INCLUDES . 'languages/english/products_with_attributes_stock.php',
 		DIR_FS_ADMIN . DIR_WS_INCLUDES . 'languages/english/extra_definitions/products_with_attributes.php',
 	
-	  	DIR_FS_CATALOG . DIR_WS_INCLUDES . 'auto_loaders/config.products_with_attributes_stock.php',
+		DIR_FS_CATALOG . DIR_WS_INCLUDES . 'auto_loaders/config.products_with_attributes_stock.php',
 		DIR_FS_CATALOG . DIR_WS_INCLUDES . 'classes/observers/class.products_with_attributes_stock.php',
 		DIR_FS_CATALOG . DIR_WS_INCLUDES . 'modules/pages/checkout_success/header_php_sba.php',
 
@@ -1196,6 +1193,7 @@ function removeSBAfiles(){
 				  <ul>
 				  	<li>includes/auto_loaders/config.products_with_attributes_stock.php</li>
 					<li>includes/classes/observers/class.products_with_attributes_stock.php</li>
+					<li>includes/modules/pages/checkout_success/header_php_sba.php</li>
 					<li>includes/extra_datafiles/products_with_attributes_stock_database_tables.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>
 					<li>includes/languages/english/extra_definitions/products_with_attributes.php</li>
@@ -1217,7 +1215,6 @@ function removeSBAfiles(){
 					<li>admin/includes/classes/order.php</li>
 				  </ul>
 				  <ul>
-					<li>includes/modules/pages/checkout_success/header_php_sba.php</li>
 				    <li>includes/classes/order.php</li>
 				    <li>includes/functions/functions_lookups.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>
@@ -1277,8 +1274,9 @@ function instructionsSBA(){
 					<li>admin/includes/languages/english/extra_definitions/products_with_attributes.php</li>
 				  </ul>
 				  <ul>
-  				  	<li>includes/auto_loaders/config.products_with_attributes_stock.php</li>
+				  	<li>includes/auto_loaders/config.products_with_attributes_stock.php</li>
 					<li>includes/classes/observers/class.products_with_attributes_stock.php</li>
+					<li>includes/modules/pages/checkout_success/header_php_sba.php</li>
 					<li>includes/extra_datafiles/products_with_attributes_stock_database_tables.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>
 					<li>includes/languages/english/extra_definitions/products_with_attributes.php</li>
@@ -1301,7 +1299,6 @@ function instructionsSBA(){
 					<li>admin/includes/classes/order.php</li>
 				  </ul>
 				  <ul>
-					<li>includes/modules/pages/checkout_success/header_php_sba.php</li>
 				    <li>includes/classes/order.php</li>
 				    <li>includes/functions/functions_lookups.php</li>
 					<li>includes/functions/extra_functions/products_with_attributes.php</li>

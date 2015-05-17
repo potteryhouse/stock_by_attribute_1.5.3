@@ -179,6 +179,7 @@
     	//	1. Check if the attribute has been added to the SBA Stock Page.
     	//	2. Check if the attribute(s) are listed in seperate rows or are combined into a single row.
 
+      // mc12345678 - The following seems like it could be compressed more/do less searches.  Now that this seems to work, there is some code that can be compressed.
       $attribute_stock = $db->Execute("select stock_id from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " where products_id = '" . (int)$products_id . "'");
 	  
       // check if any attribute stock values have been set for the product in the SBA table, if not do the else part
@@ -186,14 +187,14 @@
 
 			// prepare to search for details for the particular attribute combination passed as a parameter
 			if( sizeof($attributes) > 1 || $dupTest ){
-				$first_search = 'where options_values_id in ("'.implode('","',$attributes).'")';
+				$first_search = 'where options_values_id in ("'.implode('","',$attributes).'")';  // This helps make a list of items where the options_values_id is compared to each individual attribute ("x","y","z")
 			} else {
 				//foreach extracts the attribute from the array
-				foreach($attributes as $attribute){
-				//used for product with a single attribute 
-				$first_search = 'where options_values_id = "'.$attribute.'"';
+				foreach($attributes as $attribute){ // sets the search to use the last attribute in the list
+          //used for product with a single attribute 
+          $first_search = 'where options_values_id = "'.$attribute.'"';
 				}
-		      }
+		  }
 
           // obtain the attribute ids
   		  $query = 'select products_attributes_id 
@@ -296,6 +297,7 @@
  * @param int The product id of the product whos's stock is to be checked
  * @param int Is this amount of stock available
  *
+ * @TODO naughty html in a function
 */
 
 // START "Stock by Attributes"
@@ -308,9 +310,10 @@
   		$stock_left = (zen_get_products_stock($products_id) - $products_quantity);
   	}
   	
-    $out_of_stock = null;
+    $out_of_stock = '';
+
     if ($stock_left < 0) {
-      $out_of_stock = STOCK_MARK_PRODUCT_OUT_OF_STOCK;
+      $out_of_stock = '<span class="markProductOutOfStock">' . STOCK_MARK_PRODUCT_OUT_OF_STOCK . '</span>';
     }
 
     return $out_of_stock;

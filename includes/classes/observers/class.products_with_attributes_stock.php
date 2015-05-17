@@ -4,6 +4,8 @@
  * Description of class.products_with_attributes_stock
  *
  * @author mc12345678
+ * 
+ * Updated for Stock by Attributes 1.5.3.1 
  */
 class products_with_attributes_stock extends base {
 	function products_with_attributes_stock() {

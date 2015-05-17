@@ -1,6 +1,6 @@
 <?php
 /*
- * Updated for Stock by Attributes 1.5.2
+ * Updated for Stock by Attributes 1.5.3.1
  */
 if (!defined('IS_ADMIN_FLAG')) {
   die('Illegal Access');

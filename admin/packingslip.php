@@ -175,7 +175,7 @@
 				//get custom ID
 				$customid = $stock->zen_get_customid($order->products[$i]['id'],$attributes);
 				//only display custom ID if exists
-				if(!empty($customid) ){
+				if( !empty($customid) ){
 					//add name prefix (this is set in the admin language file)
 					$customid = PWA_CUSTOMID_NAME . $customid;
 				}

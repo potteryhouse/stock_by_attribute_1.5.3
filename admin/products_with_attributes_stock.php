@@ -136,10 +136,11 @@ switch($action)
 			$product_name = zen_get_products_name($products_id);
 			
 			$customid = trim($_POST['customid']);
+			$skuTitle = trim($_POST['skuTitle']);
 			
 			if(is_numeric($_POST['quantity']))
 			{
-				$quantity = $_POST['quantity'];
+				$quantity = $db->getBindVarValue($_POST['quantity'], 'float');
 			}
 
 			$attributes = $_POST['attributes'];
@@ -155,6 +156,7 @@ switch($action)
 			$s_mack_noconfirm .= "products_id=" . $products_id . "&"; //s_mack:noconfirm
 			$s_mack_noconfirm .= "quantity=" . $quantity . "&"; //s_mack:noconfirm
 			$s_mack_noconfirm .= "customid=" . $customid . "&"; //s_mack:noconfirm
+			$s_mack_noconfirm .= "skuTitle=" . $skuTitle . "&"; //s_mack:noconfirm
 			
   		sort($attributes);
 			$stock_attributes = implode(',',$attributes);
@@ -199,7 +201,10 @@ switch($action)
 
 		$customid = addslashes(trim($_POST['customid']));
 		if (isset($_GET['customid']) && $_GET['customid']) {$customid = addslashes(trim($_GET['customid'])); } //s_mack:noconfirm
-		
+
+		$skuTitle = addslashes(trim($_POST['skuTitle']));
+		if ($_GET['skuTitle']) { $skuTitle = addslashes(trim($_GET['skuTitle'])); }
+	
 		//$quantity = $_GET['quantity']; //s_mack:noconfirm
 		if (isset($_GET['quantity']) && $_GET['quantity']) { $quantity = doubleval($_GET['quantity']); } //s_mack:noconfirm
 		
@@ -265,7 +270,8 @@ switch($action)
 					for ($i = 0;$i < sizeof($arrNew);$i++) {
 						//used to add multi attribute combinations at one time
 						$strAttributes = implode(",", $arrNew[$i]);
-						$saveResult = $stock->insertNewAttribQty($products_id, $strAttributes, $quantity);//can not include the $customid since it must be unique
+						$productAttributeCombo = $products_id . '-' . str_replace(',', '-', $strAttributes);
+						$saveResult = $stock->insertNewAttribQty($products_id, $productAttributeCombo, $strAttributes, $quantity);//can not include the $customid since it must be unique
 					}
 				}
 				
@@ -349,8 +355,10 @@ switch($action)
 				//add each one to the database
 				for ($i = 0;$i < sizeof($arrNew);$i++) {
 					//used to add multi attribute combinations at one time
-					$strAttributes = implode(",", $arrNew[$i]);
-					$saveResult = $stock->insertNewAttribQty($products_id, $strAttributes, $quantity);//can not include the $customid since it must be unique
+          sort($arrNew[$i]); // Ensures that values are in order prior to imploding
+          $strAttributes = implode(",", $arrNew[$i]);
+					$productAttributeCombo = $products_id . '-' . str_replace(',', '-', $strAttributes);
+					$saveResult = $stock->insertNewAttribQty($products_id, $productAttributeCombo, $strAttributes, $quantity);//can not include the $customid since it must be unique
 				}
 				
 			}
@@ -358,7 +366,8 @@ switch($action)
 				//used for adding one attribute or atribute combination at a time
 				$strAttributes = ltrim($attributes, ",");//remove extra , if present
 				$strAttributes = rtrim($strAttributes, ",");//remove extra , if present
-				$saveResult = $stock->insertNewAttribQty($products_id, $strAttributes, $quantity, $customid);
+				$productAttributeCombo = $products_id . '-' . str_replace(',', '-', $strAttributes);
+				$saveResult = $stock->insertNewAttribQty($products_id, $productAttributeCombo, $strAttributes, $quantity, $customid, $skuTitle);
 			}
 			
 		}
@@ -375,6 +384,10 @@ switch($action)
 			//Only updates custom id if a value is provided, will not set to null
 			if(!empty($customid)){
 				$saveResult = $stock->updateCustomIDAttrib($stock_id, $customid);
+			}
+			//Only updates sku title if a value is provided, will not set to null
+			if(!empty($skuTitle)){
+				$saveResult = $stock->updateTitleAttrib($stock_id, $skuTitle);
 			}
 		}
 		
@@ -461,14 +474,18 @@ global $template_dir;
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=<?php echo CHARSET; ?>">
 <title><?php echo TITLE; ?></title>
-<link rel="stylesheet" type="text/css" href="./includes/stylesheet.css">
-<link rel="stylesheet" type="text/css" href="./includes/cssjsmenuhover.css" media="all" id="hoverJS">
-<link rel="stylesheet" type="text/css" href="./includes/products_with_attributes_stock_ajax.css" media="all" id="hoverJS">
-<script src="<?php echo DIR_WS_CATALOG_TEMPLATE . $template_dir; /*mc12345678 Still not sure that trying to call the store template is the best way to incorporate the javascript instead of it being in the admin panel on it's own.  Yes two places to store, but... */ ?>/jscript/jquery-1.10.2.min.js"></script>
-<script type="text/javascript" src="<?php echo DIR_WS_CATALOG_TEMPLATE . $template_dir; ?>/jscript/jquery.form.js"></script>
-<script type="text/javascript" src="./products_with_attributes_stock_ajax.js"></script>
-<script type="text/javascript" src="./includes/menu.js"></script>
-<script type="text/javascript" src="./includes/general.js"></script>
+<link rel="stylesheet" type="text/css" href="includes/stylesheet.css">
+<link rel="stylesheet" type="text/css" href="includes/cssjsmenuhover.css" media="all" id="hoverJS">
+<link rel="stylesheet" type="text/css" href="includes/products_with_attributes_stock_ajax.css">
+<?php if (file_exists(DIR_FS_CATALOG_TEMPLATES . 'template_default/jscript/jquery.min.js')) { ?>
+<script type="text/javascript" src="<?php echo ($page_type == 'NONSSL' ? HTTP_CATALOG_SERVER . DIR_WS_CATALOG : ( ENABLE_SSL_ADMIN == 'true' ? HTTPS_CATALOG_SERVER . DIR_WS_HTTPS_CATALOG : HTTP_CATALOG_SERVER . DIR_WS_CATALOG ) ) . DIR_WS_TEMPLATES . 'template_default'; ?>/jscript/jquery.min.js"></script>
+<?php } else { ?>
+<script type="text/javascript" src="<?php echo ($page_type == 'NONSSL' ? HTTP_CATALOG_SERVER . DIR_WS_CATALOG : ( ENABLE_SSL_ADMIN == 'true' ? HTTPS_CATALOG_SERVER . DIR_WS_HTTPS_CATALOG : HTTP_CATALOG_SERVER . DIR_WS_CATALOG ) ) . DIR_WS_TEMPLATES . $template_dir; ?>/jscript/jquery-1.10.2.min.js"></script>
+<?php } ?>
+<script type="text/javascript" src="<?php echo ($page_type == 'NONSSL' ? HTTP_CATALOG_SERVER . DIR_WS_CATALOG : ( ENABLE_SSL_ADMIN == 'true' ? HTTPS_CATALOG_SERVER . DIR_WS_HTTPS_CATALOG : HTTP_CATALOG_SERVER . DIR_WS_CATALOG ) ) . DIR_WS_TEMPLATES . $template_dir; ?>/jscript/jquery.form.js"></script>
+<script type="text/javascript" src="products_with_attributes_stock_ajax.js"></script>
+<script type="text/javascript" src="includes/menu.js"></script>
+<script type="text/javascript" src="includes/general.js"></script>
 <script type="text/javascript">
 <!--
 function init()
@@ -536,6 +553,11 @@ switch($action){
 			
 			echo '<p>If using "<strong>All - Attributes - Combo</strong>" there must be TWO (or more) attribute groups selected (i.e., Color and Size).';
 			echo '<hr>';
+			
+			echo 'If <strong>"ALL"</strong> is selected, the ' . PWA_SKU_TITLE . ' will not be saved.<br />' . PWA_SKU_TITLE . ' should be unique for each attribute and combination.<br />
+                  <strong>' . PWA_SKU_TITLE . ':</strong> '.zen_draw_input_field('skuTitle').'</p>'."\n";
+			echo '<hr>';
+			
 			echo 'The ' . PWA_CUSTOM_ID . ' will not be saved if <strong>"ALL"</strong> is selected.<br />' . PWA_CUSTOM_ID . ' must be unique for each attribute / combination.<br />
                   <strong>' . PWA_CUSTOM_ID . ':</strong> '.zen_draw_input_field('customid').'</p>'."\n";
 			echo '<hr>';
@@ -621,6 +643,9 @@ switch($action){
 		}
 		elseif( isset($_GET['search']) || isset($_POST['search']) ){
 			$seachBox = (trim($_GET['search']));
+      if (is_numeric($seachBox)) {
+        $seachPID = doubleval(trim($_GET['search']));
+      }
 		}
 		elseif( isset($_GET['seachPID']) ){
 				$seachPID = doubleval(trim($_GET['seachPID']));
@@ -666,12 +691,13 @@ switch($action){
 		break;
 }
 ?>
+</div>
 <!-- body_eof //-->
 <!-- footer //-->
 <?php require(DIR_WS_INCLUDES . 'footer.php'); ?>
 <!-- footer_eof //-->
 <br />
-</div>
+
 </body>
 </html>
 <?php require(DIR_WS_INCLUDES . 'application_bottom.php'); ?>

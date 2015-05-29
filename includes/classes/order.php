@@ -439,7 +439,6 @@ class order extends base {
       } else {
         $rowClass="rowOdd";
       }
-      
       $taxRates = zen_get_multiple_tax_rates($products[$i]['tax_class_id'], $taxCountryId, $taxZoneId);
       $this->products[$index] = array('qty' => $products[$i]['quantity'],
                                       'name' => $products[$i]['name'],
@@ -719,7 +718,7 @@ class order extends base {
           $stock_values = $db->Execute("select * from " . TABLE_PRODUCTS . " where products_id = '" . zen_get_prid($this->products[$i]['id']) . "'");
         }
 
-        $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_BEGIN', $i, $stock_values);
+        $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_BEGIN', array('i'=>$i, 'stock_values'=>$stock_values));
 
         if ($stock_values->RecordCount() > 0) {
           // mc12345678 do not decrement quantities if products_attributes_filename exists for the products in the order;
@@ -738,73 +737,6 @@ class order extends base {
           //            $this->products[$i]['stock_value'] = $stock_values->fields['products_quantity'];
 
           $db->Execute("update " . TABLE_PRODUCTS . " set products_quantity = '" . $stock_left . "' where products_id = '" . zen_get_prid($this->products[$i]['id']) . "'");
-
-			// kuroi: Begin Stock by Attributes additions
-			// added to update quantities of products with attributes
-			$attribute_search = array();
-			$attribute_stock_left = STOCK_REORDER_LEVEL + 1;  // kuroi: prevent false low stock triggers  
-
-      // mc12345678 If the has attibutes then perform the following work.
-			if(isset($this->products[$i]['attributes']) and sizeof($this->products[$i]['attributes']) >0){
-        // mc12345678 Identify a list of attributes associated with the product
-				$stock_attributes_search = zen_get_sba_stock_attribute(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
-        
-/*        foreach($this->products[$i]['attributes'] as $attributes){
-					$attribute_search[] = $attributes['value_id'];
-				}
-*/			
-        /* mc12345678 If there is more than one attribute associated with the product then perform the first of the below, otherwise, if there is only a single attribute then perform the second action. */
-/*				if(sizeof($attribute_search) > 1){
-        foreach($this->products[$i]['attributes'] as $attributes){
-					$attribute_search[] = $attributes['value_id'];
-				}
-			
-        /* mc12345678 If there is more than one attribute associated with the product then perform the first of the below, otherwise, if there is only a single attribute then perform the second action. */
-/*				if(sizeof($attribute_search) > 1){
-        
- // mc12345678 As written this will pull all cases of the options_values_id being found.
-          $attribute_search = 'where options_values_id in ("'.implode('","', $attribute_search).'")';
-				} else {
-					$attribute_search = 'where options_values_id="' . $attribute_search[0].'"';
-				}
-
-        // mc12345678 Get all of the products_attributes_id's for the product where the options_values_id are the attributes of a product.
-				$query = 'select products_attributes_id from ' . TABLE_PRODUCTS_ATTRIBUTES . ' ' . $attribute_search .' and products_id="' . zen_get_prid($this->products[$i]['id']) . '" order by products_attributes_id';
-				$attributes = $db->Execute($query);
-				$stock_attributes_search = array();
-
-        // mc12345678 Create an array of all of the attributes_ids for the product's attributes
-        while(!$attributes->EOF){
-					$stock_attributes_search[] = $attributes->fields['products_attributes_id'];	
-					$attributes->MoveNext();
-				}
-        // mc12345678 If there are more than one attributes_id then implode all of the attributes into a single comman separated variable.  If there is one attribute_id then do the second action 
-        if(sizeof($stock_attributes_search) > 1){
-					$stock_attributes_search = implode(',', $stock_attributes_search);
-				} else {
-          // mc12345678 Why use this method of assigning, when there is only one item to be used?
-          foreach($stock_attributes_search as $attribute_search){
-						$stock_attributes_search1 = $attribute_search;
-					}
-					$stock_attributes_search = $stock_attributes_search1;
-				}
-*/				
-        // mc12345678 If there was only one attributes_id, then this will report the quantity of that one attribute; however, if there are multiple and the comma separated version of is applied, then the only value that will come back is the one of where all attributes are used. This does not appear to provide a correct total quantity for multiple attributes.
-				$get_quantity_query = 'select quantity from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
-
-        // mc12345678 Identify the stock available from SBA.
-  			$attribute_stock_available = $db->Execute($get_quantity_query);	
-        // mc12345678 Identify the stock remaining for the overall stock by removing the number of the current product from the number available for the attributes_id. 
-				$attribute_stock_left = $attribute_stock_available->fields['quantity'] - $this->products[$i]['qty'];
-
-        // mc12345678 Update the SBA table to reflect the stock remaining based on the above.
-				$attribute_update_query = 'update ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' set quantity='.$attribute_stock_left.' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
-				$db->Execute($attribute_update_query);	
-			}
-			// kuroi: End Stock by Attribute additions
-
-      // mc12345678 If the remaining stock is gone, then if supposed to not show sold out items then
-      //  turn the entire product off
           //        if ( ($stock_left < 1) && (STOCK_ALLOW_CHECKOUT == 'false') ) {
           if ($stock_left <= 0) {
             // only set status to off when not displaying sold out
@@ -817,15 +749,7 @@ class order extends base {
           if ( $stock_left <= STOCK_REORDER_LEVEL ) {
             // WebMakers.com Added: add to low stock email
             $this->email_low_stock .=  'ID# ' . zen_get_prid($this->products[$i]['id']) . "\t\t" . $this->products[$i]['model'] . "\t\t" . $this->products[$i]['name'] . "\t\t" . ' Qty Left: ' . $stock_left . "\n";
-          // kuroi: trigger and details for attribute low stock email
-          } elseif ($attribute_stock_left <= STOCK_REORDER_LEVEL) {
-            $this->email_low_stock .=  'ID# ' . zen_get_prid($this->products[$i]['id']) . ', ' . $this->products[$i]['model'] . ', ' . $this->products[$i]['name'] . ', ';
-						foreach($this->products[$i]['attributes'] as $attributes){
-							$this->email_low_stock .= $attributes['option'] . ': ' . $attributes['value'] . ', ';
-						}
-						$this->email_low_stock .= 'Stock: ' . $attribute_stock_left . "\n\n";
-		// kuroi: End Stock by Attribute additions
-         }
+          }
         }
       }
 
@@ -833,7 +757,7 @@ class order extends base {
       //    $db->Execute("update " . TABLE_PRODUCTS . " set products_ordered = products_ordered + " . sprintf('%d', $order->products[$i]['qty']) . " where products_id = '" . zen_get_prid($order->products[$i]['id']) . "'");
       $db->Execute("update " . TABLE_PRODUCTS . " set products_ordered = products_ordered + " . sprintf('%f', $this->products[$i]['qty']) . " where products_id = '" . zen_get_prid($this->products[$i]['id']) . "'");
 
-      $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_END', $i);
+      $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_END');
 
       $sql_data_array = array('orders_id' => $zf_insert_id,
                               'products_id' => zen_get_prid($this->products[$i]['id']),
@@ -865,7 +789,6 @@ class order extends base {
       $this->products_ordered_attributes = '';
       if (isset($this->products[$i]['attributes'])) {
         $attributes_exist = '1';
-        $stock_info = zen_get_sba_stock_attribute_info(zen_get_prid($this->products[$i]['id']), $this->products[$i]['attributes']);
         for ($j=0, $n2=sizeof($this->products[$i]['attributes']); $j<$n2; $j++) {
           if (DOWNLOAD_ENABLED == 'true') {
             $attributes_query = "select popt.products_options_name, poval.products_options_values_name,
@@ -941,7 +864,7 @@ class order extends base {
           $order_products_attributes_id = $db->Insert_ID();
 
           //mc12345678 probably want to obtain the same merged data as above related to the orders_products_attributes_id.
-          $this->notify('NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM', array_merge(array('orders_products_attributes_id' => $order_products_attributes_id, 'stock_info'=>$stock_info), $sql_data_array));
+          $this->notify('NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM', array_merge(array('orders_products_attributes_id' => $order_products_attributes_id), $sql_data_array));
 
           if ((DOWNLOAD_ENABLED == 'true') && isset($attributes_values->fields['products_attributes_filename']) && zen_not_null($attributes_values->fields['products_attributes_filename'])) {
             $sql_data_array = array('orders_id' => $zf_insert_id,
@@ -987,29 +910,17 @@ class order extends base {
       $this->total_tax += zen_calculate_tax($total_products_price * $this->products[$i]['qty'], $products_tax);
       $this->total_cost += $total_products_price;
 
-      $this->notify('NOTIFY_ORDER_PROCESSING_ONE_TIME_CHARGES_BEGIN', $i);
+      $this->notify('NOTIFY_ORDER_PROCESSING_ONE_TIME_CHARGES_BEGIN');
 
       // build output for email notification
-      // START "Stock by Attributes"
-      $customid = null;
-      if(isset($this->products[$i]['attributes']) and sizeof($this->products[$i]['attributes']) >0){
-        $attributeList = null;
-      	foreach($this->products[$i]['attributes'] as $attributes){
-      		$attributeList[] = $attributes['value_id'];
-      	}
-      	$customid = zen_get_customid($this->products[$i]['id'],$attributeList);
-      }
-      // END "Stock by Attributes"
-
- 	  $this->products_ordered .=  $this->products[$i]['qty'] . ' x ' . $this->products[$i]['name'] . ($this->products[$i]['model'] != '' ? ' (' . $this->products[$i]['model'] . ') ' : '') . ' = ' .
+      $this->products_ordered .=  $this->products[$i]['qty'] . ' x ' . $this->products[$i]['name'] . ($this->products[$i]['customid'] != '' ? ' (' . $this->products[$i]['customid'] . ') ' : ($this->products[$i]['model'] != '' ? ' (' . $this->products[$i]['model'] . ') ' : '')) . ' = ' .
       $currencies->display_price($this->products[$i]['final_price'], $this->products[$i]['tax'], $this->products[$i]['qty']) .
-      ($this->products[$i]['onetime_charges'] !=0 ? "\n" . TEXT_ONETIME_CHARGES_EMAIL . $currencies->display_price($this->products[$i]['onetime_charges'], $this->products[$i]['tax'], 1) : '') .   
- 	  $this->products_ordered_attributes . "\n";
- 	  
+      ($this->products[$i]['onetime_charges'] !=0 ? "\n" . TEXT_ONETIME_CHARGES_EMAIL . $currencies->display_price($this->products[$i]['onetime_charges'], $this->products[$i]['tax'], 1) : '') .
+      $this->products_ordered_attributes . "\n";
       $this->products_ordered_html .=
       '<tr>' . "\n" .
       '<td class="product-details" align="right" valign="top" width="30">' . $this->products[$i]['qty'] . '&nbsp;x</td>' . "\n" .
-      '<td class="product-details" valign="top">' . nl2br($this->products[$i]['name']) . ($customid != '' ? ' (' . nl2br($customid) . ') ' : ' (' . nl2br($this->products[$i]['model']) . ') ') . "\n" .
+      '<td class="product-details" valign="top">' . nl2br($this->products[$i]['name']) . ($this->products[$i]['model'] != '' ? ' (' . nl2br($this->products[$i]['model']) . ') ' : '') . "\n" .
       '<nobr>' .
       '<small><em> '. nl2br($this->products_ordered_attributes) .'</em></small>' .
       '</nobr>' .
@@ -1131,7 +1042,7 @@ class order extends base {
     $html_msg['EMAIL_LAST_NAME'] = $this->customer['lastname'];
     //  $html_msg['EMAIL_TEXT_HEADER'] = EMAIL_TEXT_HEADER;
     $html_msg['EXTRA_INFO'] = '';
-    $this->notify('NOTIFY_ORDER_INVOICE_CONTENT_READY_TO_SEND', array('zf_insert_id' => $zf_insert_id, 'text_email' => $email_order, 'html_email' => $html_msg), $email_order, $html_msg);
+    $this->notify('NOTIFY_ORDER_INVOICE_CONTENT_READY_TO_SEND', array('zf_insert_id' => $zf_insert_id, 'text_email' => $email_order, 'html_email' => $html_msg));
     zen_mail($this->customer['firstname'] . ' ' . $this->customer['lastname'], $this->customer['email_address'], EMAIL_TEXT_SUBJECT . EMAIL_ORDER_NUMBER_SUBJECT . $zf_insert_id, $email_order, STORE_NAME, EMAIL_FROM, $html_msg, 'checkout', $this->attachArray);
 
     // send additional emails

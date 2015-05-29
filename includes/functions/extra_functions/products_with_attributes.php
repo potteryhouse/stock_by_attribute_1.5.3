@@ -3,12 +3,13 @@
  * @package includes/functions/extra_functions
  * products_with_attributes.php
  *
+ * @package functions/extra_functions
  * @copyright Copyright 2003-2014 Zen Cart Development Team
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
  * 
- * Updated for Stock by Attributes 1.5.3.1
+ * Stock by Attributes 1.5.4
  */
 
 //test for multiple entry of same product in customer's shopping cart
@@ -41,10 +42,9 @@ function cartProductCount($products_id){
   function zen_draw_pull_down_menu_SBAmod($name, $values, $default = '', $parameters = '', $required = false, $disable = null, $options_menu_images = null) {
 		
   	global $template_dir;
-  	require('./includes/configure.php');
   	$tmp_attribID = trim($name, 'id[]');//used to get the select ID reference to be used in jquery
-  	$field = '<script src="'.DIR_WS_TEMPLATES . $template_dir . '/jscript/jquery-1.10.2.min.js"></script>
-			  <script type="text/javascript">
+  	$field = /*'<script ' . *//*src="'.DIR_WS_TEMPLATES . $template_dir . '/jscript/jquery-1.10.2.min.js"*//* '></script> */
+			  '<script type="text/javascript">
 	  			$(function(){
 					$("#attrib-'.$tmp_attribID.'").on("click", function(){
 						$("#SBA_ProductImage").attr("src", $(this).find(":selected").attr("data-src"));
@@ -98,16 +98,19 @@ function cartProductCount($products_id){
 	$customid = null;
 	
   	// check if there are attributes for this product
- 	$stock_has_attributes = $db->Execute('select products_attributes_id 
+ 	$stock_has_attributes_query = 'select products_attributes_id 
   											from '.TABLE_PRODUCTS_ATTRIBUTES.' 
-  											where products_id = ' . (int)$products_id . '');
+  											where products_id = :products_id:';
+  $stock_has_attributes_query = $db->bindVars($stock_has_attributes_query, ':products_id:', $products_id, 'integer');
+  $stock_has_attributes = $db->Execute($stock_has_attributes_query);
 
   	if ( $stock_has_attributes->RecordCount() < 1 ) {
   		
   			//if no attributes return products_model
 			$no_attribute_stock_query = 'select products_model 
   										from '.TABLE_PRODUCTS.' 
-  										where products_id = '. (int)$products_id . ';';
+  										where products_id = :products_id:';
+		$no_attribute_stock_query = $db->bindVars($no_attribute_stock_query, ':products_id:', $products_id, 'integer');
   		$customid = $db->Execute($no_attribute_stock_query);
   		return $customid->fields['products_model'];
   	} 
@@ -138,7 +141,7 @@ function cartProductCount($products_id){
   					$attributes_new->MoveNext();
   				}
 
-				$stock_attributes = implode('","',$stock_attributes);
+				$stock_attributes = implode(',',$stock_attributes);
   			}
   			
   			//Get product model
@@ -149,10 +152,14 @@ function cartProductCount($products_id){
   			//Get custom id as products_model
   			$customid_query = 'select customid as products_model
 		  							from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' 
-		  							where products_id = '.(int)$products_id.' 
-		  							and stock_attributes in ("'.$stock_attributes.'");';  
-  		$customid = $db->Execute($customid_query);
+		  							where products_id = :products_id: 
+		  							and stock_attributes in ( ":stock_attributes:");'; 
+        $customid_query = $db->bindVars($customid_query, ':products_id:', $products_id, 'integer');
+        $customid_query = $db->bindVars($customid_query, ':stock_attributes:', $stock_attributes, 'passthru');
+  		$customid = $db->Execute($customid_query); //moved to inside this loop as for some reason it has made
+			// a difference in the code where there would be an error with it below...
   		}
+  		
   		
   		if($customid->fields['products_model']){
   		
@@ -175,7 +182,8 @@ function cartProductCount($products_id){
   			//Get product model
   			$customid_model_query = 'select products_model
 						  					from '.TABLE_PRODUCTS.'
-						  					where products_id = '. (int)$products_id . ';';
+						  					where products_id = :products_id:';
+			$customid_model_query = $db->bindVars($customid_model_query, ':products_id:', $products_id, 'integer');								
   			$customid = $db->Execute($customid_model_query);
   			//return result for display
   			return $customid->fields['products_model'];

@@ -67,11 +67,11 @@
      <tr class="<?php echo $product['rowClass']; ?>">
        <td class="cartQuantity">
 <?php
-  	if ( $product['flagShowFixedQuantity'] ) {
-    	echo $product['showFixedQuantityAmount'] . '<br /><span class="alert bold">' . $product['flagStockCheck'] . '</span><br /><br />' . $product['showMinUnits'];
-  	} else {
-    	echo $product['quantityField']           . '<br /><span class="alert bold">' . $product['flagStockCheck'] . '</span><br /><br />' . $product['showMinUnits'];
-  	}
+  if ($product['flagShowFixedQuantity']) {
+    echo $product['showFixedQuantityAmount'] . '<br /><span class="alert bold">' . $product['flagStockCheck'] . '</span><br /><br />' . $product['showMinUnits'];
+  } else {
+    echo $product['quantityField'] . '<br /><span class="alert bold">' . $product['flagStockCheck'] . '</span><br /><br />' . $product['showMinUnits'];
+  }
 ?>
        </td>
        <td class="cartQuantityUpdate">
@@ -84,8 +84,7 @@
 ?>
        </td>
        <td class="cartProductDisplay">
-<a href="<?php echo $product['linkProductsName']; ?>"><span id="cartImage" class="back"><?php echo $product['productsImage']; ?></span>
-<span id="cartProdTitle"><?php echo $product['productsName'] . '<span class="alert bold">' . $product['flagStockCheck'] . '</span>'; ?></span></a>
+<a href="<?php echo $product['linkProductsName']; ?>"><span id="cartImage" class="back"><?php echo $product['productsImage']; ?></span><span id="cartProdTitle"><?php echo $product['productsName'] . '<span class="alert bold">' . $product['flagStockCheck'] . '</span>'; ?></span></a>
 
 <?php 
 	// START "Stock by Attributes"
@@ -111,6 +110,7 @@
 ?>
 <br class="clearBoth" />
 
+
 <?php
 
 // START "Stock by Attributes" 
@@ -124,13 +124,9 @@ if( STOCK_SBA_DISPLAY_CUSTOMID == 'true' && !is_null($product['customid']) ){
   echo $product['attributeHiddenField'];
   if (isset($product['attributes']) && is_array($product['attributes'])) {
   echo '<div class="cartAttribsList">';
-    
   echo '<ul>';
     reset($product['attributes']);
     foreach ($product['attributes'] as $option => $value) {
-        $product_options_name = $value['products_options_name'];
-        $product_options_name_array = explode(":", $product_options_name);
-        $product_options_name = $product_options_name_array[0];
 ?>
 
 <li><?php echo $value['products_options_name'] . TEXT_OPTION_DIVIDER . nl2br($value['products_options_values_name']); ?></li>

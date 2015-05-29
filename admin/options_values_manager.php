@@ -475,7 +475,7 @@ die('I SEE match from products_id:' . $copy_from_products_id . ' options_id_from
             // check for associated downloads
             $downloads_remove_query = "select products_attributes_id from " . TABLE_PRODUCTS_ATTRIBUTES . " where products_id='" . $current_products_id . "' and options_id='" . $options_id_from . "' and options_values_id='" . $options_values_values_id_from . "'";
             $downloads_remove = $db->Execute($downloads_remove_query);
-			//mc12345678 SBA Added
+			//mc12345678 SBA Added Start
             $downloads_remove_list = array();
             while (!$downloads_remove->EOF) {
               $downloads_remove_list[] = $downloads_remove->fields['products_attributes_id'];
@@ -484,11 +484,11 @@ die('I SEE match from products_id:' . $copy_from_products_id . ' options_id_from
             $downloads_remove->Move(0);
             $downloads_remove->MoveNext();
             $stock_ids = zen_get_sba_ids_from_attribute($downloads_remove_list);
-            if (sizeof($stock_ids) > 0 && zen_not_null($stock_ids)) {
+            if (sizeof($stock_ids) > 0 /*&& zen_not_null($stock_ids)*/) {
               $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
                             where stock_id in (" . implode(',', $stock_ids) . ")");
             }
-			//mc12345678 SBA Added            
+			//mc12345678 SBA Added End
             $sql = "delete from " . TABLE_PRODUCTS_ATTRIBUTES . " where products_id='" . $current_products_id . "' and options_id='" . $options_id_from . "' and options_values_id='" . $options_values_values_id_from . "'";
             $delete_selected = $db->Execute($sql);
 

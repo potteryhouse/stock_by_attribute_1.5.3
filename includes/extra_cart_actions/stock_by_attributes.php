@@ -1,5 +1,7 @@
 <?php
-
+/*
+ * Stock by Attributes 1.5.4
+ */
 
 //What about: 'multiple_products_add_product' (Needs to be addressed though don't see at the moment why since generally unable to select multiple products each with attributes, perhaps something to consider for later, but let's get serious here at the moment as there are more routine actions to be handled properly first.), 'update_product' (Needs to be addressed), or 'cart' (does a notify action, so may need to address?)actions?
 if (isset($_GET['action']) && $_GET['action'] == 'update_product') {
@@ -100,7 +102,6 @@ if (isset($_GET['action']) && $_GET['action'] == 'update_product') {
       } else {
         // adjust minimum and units
         $attributes = ($_POST['id'][$_POST['products_id'][$i]]) ? $_POST['id'][$_POST['products_id'][$i]] : '';
-        $_SESSION['CTest'.$i] = $attributes;
         $_SESSION['cart']->add_cart($_POST['products_id'][$i], $new_qty, $attributes, false);
       }
       }
@@ -152,13 +153,23 @@ if (isset($_GET['action']) && $_GET['action'] == 'add_product') {
     $cart_qty = $_SESSION['cart']->get_quantity($product_id);
     
     if ($_SESSION['cart']->display_debug_messages) $messageStack->add_session('header', 'B: FUNCTION ' . __FUNCTION__ . ' Products_id: ' . $_POST['products_id'] . ' cart_qty: ' . $cart_qty . ' $_POST[cart_quantity]: ' . $_POST['cart_quantity'] . ' <br>', 'caution');
+
+    $query = 'SELECT * 
+                    FROM information_schema.tables
+                    WHERE table_schema = :your_db: 
+                    AND table_name = :table_name:
+                    LIMIT 1;';
+    $query = $db->bindVars($query, ':your_db:', DB_DATABASE, 'string');
+    $query = $db->bindVars($query, ':table_name:', TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK, 'string');
+	$stock_id = $db->Execute($query, false, false, 0, true);
+	if ($stock_id->RecordCount() > 0) {
       
-    $query = 'select stock_id from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK .  ' where products_id = :products_id:';
-    $query = $db->bindVars($query, ':products_id:',  $_POST['products_id'], 'integer');
-    $stock_id = $db->Execute($query, false, false, 0, true);
+      $query = 'select stock_id from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK .  ' where products_id = :products_id:';
+      $query = $db->bindVars($query, ':products_id:',  $_POST['products_id'], 'integer');
+      $stock_id = $db->Execute($query, false, false, 0, true);
 //  $_SESSION['stock_idquery'] = $stock_id->RecordCount();
 //Check if item is an SBA tracked item, if so, then perform analysis of whether to add or not.
-    
+    }
     if ($stock_id->RecordCount() > 0) {
 //Looks like $_SESSION['cart']->in_cart_mixed($prodId) could be used here to pull the attribute related product information to verify same product is being added to cart... This also may help in the shopping_cart routine added for SBA as all SBA products will have this modifier.
 //      $cart_qty = 0;
@@ -241,7 +252,6 @@ if (isset($_GET['action']) && $_GET['action'] == 'add_product') {
             }
           }
 
-          $_SESSION['CTest'.$i] = $attributes;
           $_SESSION['cart']->add_cart($_POST['products_id'], $_SESSION['cart']->get_quantity(zen_get_uprid($_POST['products_id'], $real_ids))+($new_qty), $real_ids);
           // iii 030813 end of changes.
         } // eof: set error message

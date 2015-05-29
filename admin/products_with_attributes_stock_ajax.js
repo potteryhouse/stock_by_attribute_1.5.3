@@ -84,6 +84,20 @@ $(document).ready(function(){
             }
         }        
     })
+
+    //stockAttributesCellTitle
+    $(".stockAttributesCellTitle").click(function(event){
+        var $tgt = $(event.target);
+        var $id = this.id;
+        var $inner = this.innerHTML;
+        if (!$tgt.is('input')) {
+            if(!this.hasEventHander){
+            var $newLi = '<input type="text" name="' + $id + '" id="' + $id + '" value="' + $inner + '" size="25"/>';
+            this.innerHTML = $newLi;
+                this.hasEventHander = true;
+            }
+        }        
+    })
     
 });
 
@@ -149,6 +163,28 @@ function addEvent() {
 			}
 	);
 }
+
+//stockAttributesCellTitle
+function addEvent() {
+	$('.stockAttributesCellTitle').each(
+			function(){
+				if(!this.hasEventHander)
+					$(this).click(function(event){    
+					/*/ Our Eventhanderl /*/    
+	                var $tgt = $(event.target);
+	                var $id = this.id;
+	                var $inner = this.innerHTML;
+	                if (!$tgt.is('input')) {
+	                	var $newLi = '<input type="text" name="' + $id + '" id="' + $id + '" value="' + $inner + '" size="25"/>';
+	                    this.innerHTML = $newLi;
+	                    //this.unbind("click");
+	                }        
+					});
+	           this.hasEventHander = true;
+			}
+	);
+}
+
 function saved(responseText, statusText)  { 
     alert('status: ' + statusText + '\n\nresponseText: \n' + responseText ); 
 }

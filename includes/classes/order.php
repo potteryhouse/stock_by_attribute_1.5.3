@@ -7,7 +7,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version GIT: $Id: Author: Ian Wilson  Fri Jun 1 14:21:21 2012 +0000 Modified in v1.5.1 $
  * 
- * Updated for Stock by Attributes 1.5.2
+ * Updated for Stock by Attributes 1.5.3.1
  */
 /**
  * order class
@@ -439,7 +439,6 @@ class order extends base {
       } else {
         $rowClass="rowOdd";
       }
-      
       $taxRates = zen_get_multiple_tax_rates($products[$i]['tax_class_id'], $taxCountryId, $taxZoneId);
       $this->products[$index] = array('qty' => $products[$i]['quantity'],
                                       'name' => $products[$i]['name'],
@@ -692,10 +691,13 @@ class order extends base {
     // lowstock email report
     $this->email_low_stock='';
 
+    // mc12345678 cycle through each product that is in the order.
     for ($i=0, $n=sizeof($this->products); $i<$n; $i++) {
       $custom_insertable_text = '';
-      // Stock Update - Joao Correia
+      // Stock Update - Joao Correia - mc12345678 Subtract product in stock by product orders
       if (STOCK_LIMITED == 'true') {
+        // mc12345678 If downloads are possible then account for them in addition to all attributes.
+        // obtain the quantity of the total number of a product, and the status of shipping.
         if (DOWNLOAD_ENABLED == 'true') {
           $stock_query_raw = "select p.products_quantity, pad.products_attributes_filename, p.product_is_always_free_shipping
                               from " . TABLE_PRODUCTS . " p
@@ -716,13 +718,18 @@ class order extends base {
           $stock_values = $db->Execute("select * from " . TABLE_PRODUCTS . " where products_id = '" . zen_get_prid($this->products[$i]['id']) . "'");
         }
 
-        $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_BEGIN');
+        $this->notify('NOTIFY_ORDER_PROCESSING_STOCK_DECREMENT_BEGIN', array('i'=>$i, 'stock_values'=>$stock_values));
 
         if ($stock_values->RecordCount() > 0) {
-          // do not decrement quantities if products_attributes_filename exists
+          // mc12345678 do not decrement quantities if products_attributes_filename exists for the products in the order;
+          // If download enabled is on, and 
+          // product shipping is free shipping always or free shipping never then do not subtract stock.
+          // 
+          // Decrement the stock value if any of the below are true: download is not enabled, 
+          // product is always free shipping is set to special Product/Download Requires Shipping then subtract stock, or there is not products_attributes_filename assigned to the product.
           if ((DOWNLOAD_ENABLED != 'true') || $stock_values->fields['product_is_always_free_shipping'] == 2 || (!$stock_values->fields['products_attributes_filename']) ) {
             $stock_left = $stock_values->fields['products_quantity'] - $this->products[$i]['qty'];
-            $this->products[$i]['stock_reduce'] = $this->products[$i]['qty'];
+            $this->products[$i]['stock_reduce'] = $this->products[$i]['qty']; // mc12345678 this value is not used anywhere but in this one line.
           } else {
             $stock_left = $stock_values->fields['products_quantity'];
           }
@@ -730,49 +737,6 @@ class order extends base {
           //            $this->products[$i]['stock_value'] = $stock_values->fields['products_quantity'];
 
           $db->Execute("update " . TABLE_PRODUCTS . " set products_quantity = '" . $stock_left . "' where products_id = '" . zen_get_prid($this->products[$i]['id']) . "'");
-
-			// kuroi: Begin Stock by Attributes additions
-			// added to update quantities of products with attributes
-			$attribute_search = array();
-			$attribute_stock_left = STOCK_REORDER_LEVEL + 1;  // kuroi: prevent false low stock triggers  
-
-			if(isset($this->products[$i]['attributes']) and sizeof($this->products[$i]['attributes']) >0){
-				foreach($this->products[$i]['attributes'] as $attributes){
-					$attribute_search[] = $attributes['value_id'];
-				}
-			
-				if(sizeof($attribute_search) > 1){
-					$attribute_search = 'where options_values_id in ("'.implode('","', $attribute_search).'")';
-				} else {
-					$attribute_search = 'where options_values_id="' . $attribute_search[0].'"';
-				}
-
-				$query = 'select products_attributes_id from ' . TABLE_PRODUCTS_ATTRIBUTES . ' ' . $attribute_search .' and products_id="' . zen_get_prid($this->products[$i]['id']) . '" order by products_attributes_id';
-				$attributes = $db->Execute($query);
-				$stock_attributes_search = array();
-				while(!$attributes->EOF){
-					$stock_attributes_search[] = $attributes->fields['products_attributes_id'];	
-					$attributes->MoveNext();
-				}
-				if(sizeof($stock_attributes_search) > 1){
-					$stock_attributes_search = implode(',', $stock_attributes_search);
-				} else {
-					foreach($stock_attributes_search as $attribute_search){
-						$stock_attributes_search1 = $attribute_search;
-					}
-					$stock_attributes_search = $stock_attributes_search1;
-				}
-				
-				$get_quantity_query = 'select quantity from ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
-
-  			$attribute_stock_available = $db->Execute($get_quantity_query);	
-				$attribute_stock_left = $attribute_stock_available->fields['quantity'] - $this->products[$i]['qty'];
-	
-				$attribute_update_query = 'update ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' set quantity='.$attribute_stock_left.' where products_id="' . zen_get_prid($this->products[$i]['id']) . '" and stock_attributes="' . $stock_attributes_search . '"';
-				$db->Execute($attribute_update_query);	
-			}
-			// kuroi: End Stock by Attribute additions
-
           //        if ( ($stock_left < 1) && (STOCK_ALLOW_CHECKOUT == 'false') ) {
           if ($stock_left <= 0) {
             // only set status to off when not displaying sold out
@@ -785,15 +749,7 @@ class order extends base {
           if ( $stock_left <= STOCK_REORDER_LEVEL ) {
             // WebMakers.com Added: add to low stock email
             $this->email_low_stock .=  'ID# ' . zen_get_prid($this->products[$i]['id']) . "\t\t" . $this->products[$i]['model'] . "\t\t" . $this->products[$i]['name'] . "\t\t" . ' Qty Left: ' . $stock_left . "\n";
-          // kuroi: trigger and details for attribute low stock email
-          } elseif ($attribute_stock_left <= STOCK_REORDER_LEVEL) {
-            $this->email_low_stock .=  'ID# ' . zen_get_prid($this->products[$i]['id']) . ', ' . $this->products[$i]['model'] . ', ' . $this->products[$i]['name'] . ', ';
-						foreach($this->products[$i]['attributes'] as $attributes){
-							$this->email_low_stock .= $attributes['option'] . ': ' . $attributes['value'] . ', ';
-						}
-						$this->email_low_stock .= 'Stock: ' . $attribute_stock_left . "\n\n";
-		// kuroi: End Stock by Attribute additions
-         }
+          }
         }
       }
 
@@ -905,7 +861,10 @@ class order extends base {
 
           zen_db_perform(TABLE_ORDERS_PRODUCTS_ATTRIBUTES, $sql_data_array);
 
-          $this->notify('NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM', $sql_data_array);
+          $order_products_attributes_id = $db->Insert_ID();
+
+          //mc12345678 probably want to obtain the same merged data as above related to the orders_products_attributes_id.
+          $this->notify('NOTIFY_ORDER_DURING_CREATE_ADDED_ATTRIBUTE_LINE_ITEM', array_merge(array('orders_products_attributes_id' => $order_products_attributes_id), $sql_data_array));
 
           if ((DOWNLOAD_ENABLED == 'true') && isset($attributes_values->fields['products_attributes_filename']) && zen_not_null($attributes_values->fields['products_attributes_filename'])) {
             $sql_data_array = array('orders_id' => $zf_insert_id,
@@ -954,26 +913,14 @@ class order extends base {
       $this->notify('NOTIFY_ORDER_PROCESSING_ONE_TIME_CHARGES_BEGIN');
 
       // build output for email notification
-      // START "Stock by Attributes"
-      $attributeList = null;
-      $customid = null;
-      if(isset($this->products[$i]['attributes']) and sizeof($this->products[$i]['attributes']) >0){
-      	foreach($this->products[$i]['attributes'] as $attributes){
-      		$attributeList[] = $attributes['value_id'];
-      	}
-      	$customid = zen_get_customid($this->products[$i]['id'],$attributeList);
-      }
-      // END "Stock by Attributes"
-
- 	  $this->products_ordered .=  $this->products[$i]['qty'] . ' x ' . $this->products[$i]['name'] . ($this->products[$i]['model'] != '' ? ' (' . $this->products[$i]['model'] . ') ' : '') . ' = ' .
+      $this->products_ordered .=  $this->products[$i]['qty'] . ' x ' . $this->products[$i]['name'] . ($this->products[$i]['customid'] != '' ? ' (' . $this->products[$i]['customid'] . ') ' : ($this->products[$i]['model'] != '' ? ' (' . $this->products[$i]['model'] . ') ' : '')) . ' = ' .
       $currencies->display_price($this->products[$i]['final_price'], $this->products[$i]['tax'], $this->products[$i]['qty']) .
-      ($this->products[$i]['onetime_charges'] !=0 ? "\n" . TEXT_ONETIME_CHARGES_EMAIL . $currencies->display_price($this->products[$i]['onetime_charges'], $this->products[$i]['tax'], 1) : '') .   
- 	  $this->products_ordered_attributes . "\n";
- 	  
+      ($this->products[$i]['onetime_charges'] !=0 ? "\n" . TEXT_ONETIME_CHARGES_EMAIL . $currencies->display_price($this->products[$i]['onetime_charges'], $this->products[$i]['tax'], 1) : '') .
+      $this->products_ordered_attributes . "\n";
       $this->products_ordered_html .=
       '<tr>' . "\n" .
       '<td class="product-details" align="right" valign="top" width="30">' . $this->products[$i]['qty'] . '&nbsp;x</td>' . "\n" .
-      '<td class="product-details" valign="top">' . nl2br($this->products[$i]['name']) . ($customid != '' ? ' (' . nl2br($customid) . ') ' : ' (' . nl2br($this->products[$i]['model']) . ') ') . "\n" .
+      '<td class="product-details" valign="top">' . nl2br($this->products[$i]['name']) . ($this->products[$i]['model'] != '' ? ' (' . nl2br($this->products[$i]['model']) . ') ' : '') . "\n" .
       '<nobr>' .
       '<small><em> '. nl2br($this->products_ordered_attributes) .'</em></small>' .
       '</nobr>' .

@@ -6,7 +6,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id: products_with_attributes_stock.php  $
  * 
- * Updated for Stock by Attributes 1.5.3.1
+ * Stock by Attributes 1.5.4
  */
  
 define('PWA_DELETE_VARIANT_CONFIRMATION', 'Are you sure you want to delete this product variant?');
@@ -31,6 +31,8 @@ define('PWA_QUANTITY_IN_STOCK', 'Quantity');
 define('PWA_SORT_ORDER', 'Sort Order');
 define('PWA_CUSTOM_ID', 'Custom ID');
 define('PWA_CUSTOMID_NAME', ' Item # ');
+define('PWA_SKU_TITLE', 'Description');
+define('PWA_PAC', 'Unique Combo');
 
 define('PWA_EDIT', 'Edit');
 define('PWA_DELETE', 'Delete');

@@ -20,49 +20,49 @@ if (!defined('IS_ADMIN_FLAG')) {
 $show_onetime_charges_description = 'false';
 $show_attributes_qty_prices_description = 'false';
 
-//limit to 1 for performance when processing larger tables
+// limit to 1 for performance when processing larger tables
 //gets the number of associated attributes
 $sql = "select count(*) as total
-          from " . TABLE_PRODUCTS_OPTIONS . " popt 
-			left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib ON (popt.products_options_id = patrib.options_id)
-          where    patrib.products_id='" . (int)$_GET['products_id'] . "'
-            and      popt.language_id = '" . (int)$_SESSION['languages_id'] . "'" .
+          from " . TABLE_PRODUCTS_OPTIONS . " po 
+			left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa ON (po.products_options_id = pa.options_id)
+          where    pa.products_id='" . (int)$_GET['products_id'] . "'
+            and      po.language_id = '" . (int)$_SESSION['languages_id'] . "'" .
             " limit 1";
 
-$pr_attr = $db->Execute($sql);
+            $pr_attr = $db->Execute($sql);
 
 //only continue if there are attributes
-if ($pr_attr->fields['total'] > 0) {
+            if ($pr_attr->fields['total'] > 0) {
 			  //LPAD - Return the string argument, left-padded with the specified string 
-			  //example: LPAD(popt.products_options_sort_order,11,"0") the field is 11 digits, and is left padded with 0
+			  //example: LPAD(po.products_options_sort_order,11,"0") the field is 11 digits, and is left padded with 0
               if (PRODUCTS_OPTIONS_SORT_ORDER=='0') {
-                $options_order_by= ' order by LPAD(popt.products_options_sort_order,11,"0")';
+                $options_order_by = ' order by LPAD(po.products_options_sort_order,11,"0")';
               } else {
-                $options_order_by= ' order by popt.products_options_name';
+                $options_order_by = ' order by po.products_options_name';
               }
 
               //get the option/attribute list
-              $sql = "select distinct popt.products_options_id, popt.products_options_name, popt.products_options_sort_order,
-                              popt.products_options_type, popt.products_options_length, popt.products_options_comment,
-                              popt.products_options_size,
-                              popt.products_options_images_per_row,
-                              popt.products_options_images_style,
-                              popt.products_options_rows
-              from        " . TABLE_PRODUCTS_OPTIONS . " popt
-              left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib ON (patrib.options_id = popt.products_options_id)
-              where           patrib.products_id='" . (int)$_GET['products_id'] . "'             
-              and             popt.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
+              $sql = "select distinct po.products_options_id, po.products_options_name, po.products_options_sort_order,
+                              po.products_options_type, po.products_options_length, po.products_options_comment,
+                              po.products_options_size,
+                              po.products_options_images_per_row,
+                              po.products_options_images_style,
+                              po.products_options_rows
+              from        " . TABLE_PRODUCTS_OPTIONS . " po
+              left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa ON (pa.options_id = po.products_options_id)
+              where           pa.products_id='" . (int)$_GET['products_id'] . "'             
+              and             po.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
               $options_order_by;
 
               $products_options_names = $db->Execute($sql);
-
+$products_options_names_count = $products_options_names->RecordCount();
               // iii 030813 added: initialize $number_of_uploads
               $number_of_uploads = 0;
 
               if ( PRODUCTS_OPTIONS_SORT_BY_PRICE =='1' ) {
-                $order_by= ' order by LPAD(pa.products_options_sort_order,11,"0"), pov.products_options_values_name;';
+                $order_by= ' order by LPAD(pa.products_options_sort_order,11,"0"), pov.products_options_values_name';
               } else {
-                $order_by= ' order by LPAD(pa.products_options_sort_order,11,"0"), pa.options_values_price;';
+                $order_by= ' order by LPAD(pa.products_options_sort_order,11,"0"), pa.options_values_price';
               }
 
               $discount_type = zen_get_products_sale_discount_type((int)$_GET['products_id']);
@@ -83,17 +83,20 @@ if ($pr_attr->fields['total'] > 0) {
 				p.products_quantity
                 */
 
-                $sql = "select	pov.products_options_values_id,
-			                    pov.products_options_values_name,
-			                    pa.*, p.products_quantity
-                		
+    $sql = "select distinct	pov.products_options_values_id,
+                        pov.products_options_values_name,
+			                    pa.*, p.products_quantity, 
+                				" . ($products_options_names_count <= 1 ? " pas.stock_id as pasid, pas.quantity as pasqty, pas.sort,  pas.customid, pas.title, pas.product_attribute_combo, pas.stock_attributes, " : "") . " pas.products_id 
+
 		              from      " . TABLE_PRODUCTS_ATTRIBUTES . " pa
 		              left join " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov on (pa.options_values_id = pov.products_options_values_id)
 		              left join " . TABLE_PRODUCTS . " p on (pa.products_id = p.products_id)
-		              
-		              where pa.products_id = '" . (int)$_GET['products_id'] . "'
-		              and   pa.options_id  = '" . (int)$products_options_names->fields['products_options_id'] . "'
-		              and   pov.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
+                
+		              left join " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " pas on 
+		              (p.products_id = pas.products_id and FIND_IN_SET(pa.products_attributes_id, pas.stock_attributes) > 0 )
+              where     pa.products_id = '" . (int)$_GET['products_id'] . "'
+              and       pa.options_id = '" . (int)$products_options_names->fields['products_options_id'] . "'
+              and       pov.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
                 $order_by;
 
                 $products_options = $db->Execute($sql);
@@ -105,38 +108,30 @@ if ($pr_attr->fields['total'] > 0) {
                 $tmp_checkbox = '';
                 $tmp_html = '';
                 $selected_attribute = false;
-				
+
                 $tmp_attributes_image = '';
                 $tmp_attributes_image_row = 0;
                 $show_attributes_qty_prices_icon = 'false';
-                
-                //process each attribute in the list
+
+    //process each attribute in the list
                 while (!$products_options->EOF) {
                   // reset
                   $products_options_display_price='';
                   $new_attributes_price= '';
                   $price_onetime = '';
-                  
-				// START "Stock by Attributes"  
-				//echo '<br />'.zen_get_products_stock($_GET['products_id'], $products_options_names->fields['products_options_id']). '<br />';//debug line
-				//use this to get quantity of each option //, pas.primary_attribute_id, pas.other_attributes_id 
-				$sql2 = "SELECT pas.stock_id, pas.quantity, pas.customid 
-						FROM " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " pas
-						WHERE pas.products_id = '" . (int)$_GET['products_id'] . "'
-						AND pas.stock_attributes = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
-				$qtyeachoption = $db->Execute($sql2);
 
-				//used to find if an attribute is read-only
-				$sqlRO = "select patrib.attributes_display_only
-              			from " . TABLE_PRODUCTS_OPTIONS . " popt
-              			left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib on (patrib.options_id = popt.products_options_id)
-              			where patrib.products_id='" . (int)$_GET['products_id'] . "'
-               			and patrib.products_attributes_id = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
+      // START "Stock by Attributes"  
+      //used to find if an attribute is read-only
+      $sqlRO = "select pa.attributes_display_only
+              			from " . TABLE_PRODUCTS_OPTIONS . " po
+              			left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa on (pa.options_id = po.products_options_id)
+              			where pa.products_id='" . (int)$_GET['products_id'] . "'
+               			and pa.products_attributes_id = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
 				$products_options_READONLY = $db->Execute($sqlRO);
 				
-				//echo 'ID: ' . $products_options->fields["products_attributes_id"] . ' Stock ID: ' . $qtyeachoption->fields['stock_id'] . ' QTY: ' . $qtyeachoption->fields['quantity'] . '<br />';//debug line
+				//echo 'ID: ' . $products_options->fields["products_attributes_id"] . ' Stock ID: ' . $qtyeachoption->fields['pasid'] . ' QTY: ' . $qtyeachoption->fields['pasqty'] . '<br />';//debug line
 				//add out of stock text based on qty
-				if( $qtyeachoption->fields['quantity'] < 1 && STOCK_CHECK == 'true' &&  $qtyeachoption->fields['stock_id'] > 0 ){
+				if( $products_options->fields['pasqty'] < 1 && STOCK_CHECK == 'true' &&  $products_options->fields['pasid'] > 0 ){
 					//test, only applicable to products with-out the read-only attribute set
 					if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
 						$products_options->fields['products_options_values_name'] = $products_options->fields['products_options_values_name'] . PWA_OUT_OF_STOCK;
@@ -155,49 +150,49 @@ if ($pr_attr->fields['total'] > 0) {
 				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_READONLY) {
 				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_SELECT_SBA) {
 				
-					if( STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $qtyeachoption->fields['quantity'] > 0 ){
+					if( STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $products_options->fields['pasqty'] > 0 ){
 						//test, only applicable to products with-out the read-only attribute set
 						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							$PWA_STOCK_QTY = PWA_STOCK_QTY . $qtyeachoption->fields['quantity'] . ' ';
+							$PWA_STOCK_QTY = PWA_STOCK_QTY . $products_options->fields['pasqty'] . ' ';
 							//show custom ID if flag set to true
-							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($qtyeachoption->fields['customid'])){
-								$PWA_STOCK_QTY .= ' (' . $qtyeachoption->fields['customid'] . ') ';
+							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
+								$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
 							}
 						}
-					}
-					elseif(STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $qtyeachoption->fields['quantity'] < 1 && $qtyeachoption->fields['stock_id'] < 1 ){
+              } elseif (STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $products_options->fields['pasqty'] < 1 && $products_options->fields['pasid'] < 1) {
 						//test, only applicable to products with-out the read-only attribute set
 						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
 							//use the qty from the product, unless it is 0, then set to out of stock.
+                  if ($products_options_names_count <= 1) {
 							if($products_options->fields['products_quantity'] > 0){
 								$PWA_STOCK_QTY = PWA_STOCK_QTY . $products_options->fields['products_quantity'] . ' ';
-							}
-							else{
+                    } else {
 								$products_options->fields['products_options_values_name'] = $products_options->fields['products_options_values_name'] . PWA_OUT_OF_STOCK;
 							}
+                  }
 							
 							//show custom ID if flag set to true
-							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($qtyeachoption->fields['customid'])){
-								$PWA_STOCK_QTY .= ' (' . $qtyeachoption->fields['customid'] . ') ';
+							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
+								$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
 							}
 						}
-					}
-					elseif(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($qtyeachoption->fields['customid'])){
+              } elseif (STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND ! empty($products_options->fields['customid'])) {
 						//show custom ID if flag set to true
 						//test, only applicable to products with-out the read-only attribute set
 						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							$PWA_STOCK_QTY .= ' (' . $qtyeachoption->fields['customid'] . ') ';
+							$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
 						}
 					}
-					
-                }}}}
+            }
+          }
+        }
+      }
 				
                 	//create image array for use in select list to rotate visable image on select.
 					if( !empty($products_options->fields['attributes_image']) ){
 	                  $options_menu_images[] = array('id' => $products_options->fields['products_options_values_id'],
 	                  'src' => 'images/'.$products_options->fields['attributes_image']);
-                	}
-                	else{
+      } else {
                 		$options_menu_images[] = array('id' => $products_options->fields['products_options_values_id']);
                 	}
                 	// END "Stock by Attributes"
@@ -213,8 +208,9 @@ if ($pr_attr->fields['total'] > 0) {
                     $price_onetime = '';
                   } else {
                     // collect price information if it exists
-					if ($products_options->fields['attributes_discounted'] == 1) {
+                    if ($products_options->fields['attributes_discounted'] == 1) {
                       // apply product discount to attributes if discount is on
+                      //              $new_attributes_price = $products_options->fields['options_values_price'];
                       $new_attributes_price = zen_get_attributes_price_final($products_options->fields["products_attributes_id"], 1, '', 'false');
                       $new_attributes_price = zen_get_discount_calc((int)$_GET['products_id'], true, $new_attributes_price);
                     } else {
@@ -241,14 +237,13 @@ if ($pr_attr->fields['total'] > 0) {
                     }
 
                     if ($products_options->fields['options_values_price'] != '0' and ($products_options->fields['product_attribute_is_free'] != '1' and $product_info->fields['product_is_free'] != '1')) {
-                    	// show sale maker discount if a percentage
+                      // show sale maker discount if a percentage
                     	// START "Stock by Attributes"
                     	if ( $products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_RADIO || $products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_CHECKBOX ) {
 	                      //use this if a PRODUCTS_OPTIONS_TYPE_RADIO or PRODUCTS_OPTIONS_TYPE_CHECKBOX
 	                      //class="productSpecialPrice" can be used in a CSS file to control the text properties, not compatable with selection lists
 	                      $products_options_display_price = ATTRIBUTES_PRICE_DELIMITER_PREFIX . '<span class="productSpecialPrice">' . $products_options->fields['price_prefix'] . $currencies->display_price($new_attributes_price, zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . '</span>' . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
-                    	}
-                    	else{
+          } else {
                     		//need to remove the <span> tag for selection lists and text boxes
                     		$products_options_display_price = ATTRIBUTES_PRICE_DELIMITER_PREFIX . $products_options->fields['price_prefix'] . $currencies->display_price($new_attributes_price, zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
                     	}
@@ -261,7 +256,7 @@ if ($pr_attr->fields['total'] > 0) {
                       } else {
                         // normal price
                         if ($new_attributes_price == 0) {
-                          $products_options_display_price = '';
+                          $products_options_display_price= '';
                         } else {
                           $products_options_display_price= ATTRIBUTES_PRICE_DELIMITER_PREFIX . $products_options->fields['price_prefix'] .
                           $currencies->display_price($new_attributes_price, zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
@@ -281,8 +276,7 @@ if ($pr_attr->fields['total'] > 0) {
 				  		//use this if a PRODUCTS_OPTIONS_TYPE_RADIO or PRODUCTS_OPTIONS_TYPE_CHECKBOX
 				  		//class="normalprice" can be used in a CSS file to control the text properties, not compatable with selection lists
 						$originalpricedisplaytext = ATTRIBUTES_PRICE_DELIMITER_PREFIX . '<span class="normalprice">' . $products_options->fields['price_prefix'] . $currencies->display_price( zen_get_attributes_price_final($products_options->fields["products_attributes_id"], 1, '', 'false'), zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . '</span>' . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
-				  	}
-				  	else{
+        } else {
 				  		//need to remove the <span> tag for selection lists and text boxes
 				  		$originalpricedisplaytext = ATTRIBUTES_PRICE_DELIMITER_PREFIX . $products_options->fields['price_prefix'] . $currencies->display_price( zen_get_attributes_price_final($products_options->fields["products_attributes_id"], 1, '', 'false'), zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
 				  	}
@@ -323,7 +317,7 @@ if ($pr_attr->fields['total'] > 0) {
                       $products_options_details_noname = $products_options_display_price . ($products_options->fields['products_attributes_weight'] != 0 ? '  ' . $products_options_display_weight : '');
                     }
                   }
-				
+
                   // radio buttons
                   if ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_RADIO) {
                     if ($_SESSION['cart']->in_cart($prod_id)) {
@@ -347,7 +341,7 @@ if ($pr_attr->fields['total'] > 0) {
                         }
                       } else {
                         // select default but do NOT auto select single radio buttons
-                     	// $selected_attribute = ($products_options->fields['attributes_default']=='1' ? true : false);
+//                        $selected_attribute = ($products_options->fields['attributes_default']=='1' ? true : false);
                         // select default radio button or auto select single radio buttons
                         $selected_attribute = ($products_options->fields['attributes_default']=='1' ? true : ($products_options->RecordCount() == 1 ? true : false));
                       }
@@ -355,14 +349,14 @@ if ($pr_attr->fields['total'] > 0) {
 
                     // START "Stock by Attributes"
 					//move default selected attribute if attribute is out of stock and check out is not allowed
-					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] > 0) ){
+					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] > 0) ){
                     	$selected_attribute = true;
 						$moveSelectedAttribute = false;	
                     }
                     $disablebackorder = null;
 					//disable radio and disable default selected
-                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] == 0 && !empty($qtyeachoption->fields['stock_id']) )
-                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($qtyeachoption->fields['stock_id']) ) 
+                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] == 0 && !empty($products_options->fields['pasid']) )
+                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($products_options->fields['pasid']) ) 
                       ){//|| $products_options_READONLY->fields['attributes_display_only'] == 1
                     		 
 						if( $selected_attribute == true ){
@@ -375,7 +369,6 @@ if ($pr_attr->fields['total'] > 0) {
                     
                     // START "Stock by Attributes"
                     switch ($products_options_names->fields['products_options_images_style']) {
-                      
                       case '0':
                       $tmp_radio .= zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton zero" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . '</label><br />' . "\n";
                       break;
@@ -469,17 +462,17 @@ if ($pr_attr->fields['total'] > 0) {
                         $selected_attribute = ($products_options->fields['attributes_default']=='1' ? true : false);
                       }
                     }
-                    
+
                     // START "Stock by Attributes"
 					//move default selected attribute if attribute is out of stock and check out is not allowed
-					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] > 0) ){
+					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] > 0) ){
                     	$selected_attribute = true;
 						$moveSelectedAttribute = false;	
                     }
                     $disablebackorder = null;
 					//disable radio and disable default selected
-                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $qtyeachoption->fields['quantity'] == 0 && !empty($qtyeachoption->fields['stock_id']) )
-                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($qtyeachoption->fields['stock_id']) ) 
+                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] == 0 && !empty($products_options->fields['pasid']) )
+                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($products_options->fields['pasid']) ) 
                       ){//|| $products_options_READONLY->fields['attributes_display_only'] == 1
                     	
                     	if( $selected_attribute == true ){
@@ -492,7 +485,7 @@ if ($pr_attr->fields['total'] > 0) {
 					
                     /*
                     $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details .'</label><br />';
-                    */				  
+                    */
                     switch ($products_options_names->fields['products_options_images_style']) {
                       case '0':
                       $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . '</label><br />' . "\n";
@@ -661,21 +654,22 @@ if ($pr_attr->fields['total'] > 0) {
                   } else {
                     $zv_display_select_option ++;
                   }
-				  
+
+
                   // default
                   // find default attribute if set to for default dropdown
                   if ($products_options->fields['attributes_default']=='1') {
                     $selected_attribute = $products_options->fields['products_options_values_id'];
                   }
-				  
+
                   //Next Item
                   $products_options->MoveNext();
+
                 }
 
                 //echo 'TEST I AM ' . $products_options_names->fields['products_options_name'] . ' Type - ' . $products_options_names->fields['products_options_type'] . '<br />';
                 // Option Name Type Display
                 switch (true) {
-                	
                   // text
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_TEXT):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -687,7 +681,6 @@ if ($pr_attr->fields['total'] > 0) {
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
-                  
                   // checkbox
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_CHECKBOX):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -699,7 +692,6 @@ if ($pr_attr->fields['total'] > 0) {
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
-                  
                   // radio buttons
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_RADIO):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -711,7 +703,6 @@ if ($pr_attr->fields['total'] > 0) {
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
-                  
                   // file upload
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_FILE):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -723,7 +714,6 @@ if ($pr_attr->fields['total'] > 0) {
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
-                  
                   // READONLY
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_READONLY):
                   $options_name[] = $products_options_names->fields['products_options_name'];
@@ -731,7 +721,6 @@ if ($pr_attr->fields['total'] > 0) {
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
-                  
                   // dropdown menu auto switch to selected radio button display
                   case ($products_options->RecordCount() == 1):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -743,7 +732,6 @@ if ($pr_attr->fields['total'] > 0) {
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
-                  
                   default:
                   // normal dropdown "SELECT LIST" menu display
                   if (isset($_SESSION['cart']->contents[$prod_id]['attributes'][$products_options_names->fields['products_options_id']])) {
@@ -789,7 +777,7 @@ if ($pr_attr->fields['total'] > 0) {
                 // attributes images table
                 // START "Stock by Attributes"
                 if(SBA_SHOW_IMAGE_ON_PRODUCT_INFO == 'true' ){
-               		$options_attributes_image[] = trim($tmp_attributes_image) . "\n";
+                $options_attributes_image[] = trim($tmp_attributes_image) . "\n";
                 }
                 // END "Stock by Attributes"
                 
@@ -800,4 +788,5 @@ if ($pr_attr->fields['total'] > 0) {
               $_GET['number_of_uploads'] = $number_of_uploads;
               //      zen_draw_hidden_field('number_of_uploads', $_GET['number_of_uploads']);
               zen_draw_hidden_field('number_of_uploads', $number_of_uploads);
-}
+            }
+

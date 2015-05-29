@@ -7,6 +7,8 @@
  * @copyright Portions Copyright 2003 osCommerce
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version GIT: $Id: Author: Ian Wilson  Tue Aug 14 14:56:11 2012 +0100 Modified in v1.5.1 $
+ *
+ * Stock by Attributes 1.5.4
  */
 
 // This should be first line of the script:
@@ -62,6 +64,8 @@ $global_query = "SELECT global_product_notifications
 $global_query = $db->bindVars($global_query, ':customersID', $_SESSION['customer_id'], 'integer');
 $global = $db->Execute($global_query);
 $flag_global_notifications = $global->fields['global_product_notifications'];*/
+
+$notificationsArray = array();
 
 if ($flag_global_notifications != '1') {
 

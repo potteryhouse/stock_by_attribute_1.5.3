@@ -564,7 +564,6 @@ function couponpopupWindow(url) {
 	// END "Stock by Attributes"
 	
     for ($i=0, $n=sizeof($order->products); $i<$n; $i++) {
-
       if (DISPLAY_PRICE_WITH_TAX_ADMIN == 'true')
       {
         $priceIncTax = $currencies->format(zen_round(zen_add_tax($order->products[$i]['final_price'], $order->products[$i]['tax']),$currencies->get_decimal_places($order->info['currency'])) * $order->products[$i]['qty'], true, $order->info['currency'], $order->info['currency_value']);
@@ -577,6 +576,7 @@ function couponpopupWindow(url) {
            '            <td class="dataTableContent" valign="top">' . $order->products[$i]['name'];
 
       if (isset($order->products[$i]['attributes']) && (sizeof($order->products[$i]['attributes']) > 0)) {
+  			$attributes = array(); // mc12345678 Moved to within if statement otherwise doesn't apply elsewhere.
         for ($j = 0, $k = sizeof($order->products[$i]['attributes']); $j < $k; $j++) {
 			// kuroi: SbA //this bit of code does not seem to be used on this page, need to see if it is dead code or used elseware!
           	$option_name_array = explode(":", $order->products[$i]['attributes'][$j]['option']);
@@ -587,19 +587,21 @@ function couponpopupWindow(url) {
 			$customid = null;
 			//test if this is to be displayed
 			if( STOCK_SBA_DISPLAY_CUSTOMID == 'true'){
-  			$attributes = array(); // mc12345678 Moved to within if statement otherwise doesn't apply elsewhere.
 				//create array for use in zen_get_customid
 				$attributes[] = $order->products[$i]['attributes'][$j]['value_id'];
 				//get custom ID
+				sort($attributes);
 				$customid = $stock->zen_get_customid($order->products[$i]['id'],$attributes);
 				//only display custom ID if exists
-				if( !empty($customid) ){
+				if( !empty($customid) && $j == $k-1){
 					//add name prefix (this is set in the admin language file)
 					$customid = PWA_CUSTOMID_NAME . $customid;
+				} else {
+					$customid = '';
 				}
 			}
 		  //"Stock by Attributes" add custom ID to display
-          echo '<br /><nobr><small>&nbsp;<i> - ' . $order->products[$i]['attributes'][$j]['option'] . ': ' . nl2br(zen_output_string_protected($order->products[$i]['attributes'][$j]['value'])) . ' (' . $customid . ') ';
+          echo '<br /><nobr><small>&nbsp;<i> - ' . $order->products[$i]['attributes'][$j]['option'] . ': ' . nl2br(zen_output_string_protected($order->products[$i]['attributes'][$j]['value'])) . (zen_not_null($customid) ? ' (' . $customid . ') ' : '');
 		  // END "Stock by Attributes"
           if ($order->products[$i]['attributes'][$j]['price'] != '0') echo ' (' . $order->products[$i]['attributes'][$j]['prefix'] . $currencies->format($order->products[$i]['attributes'][$j]['price'] * $order->products[$i]['qty'], true, $order->info['currency'], $order->info['currency_value']) . ')';
           if ($order->products[$i]['attributes'][$j]['product_attribute_is_free'] == '1' and $order->products[$i]['product_is_free'] == '1') echo TEXT_INFO_ATTRIBUTE_FREE;

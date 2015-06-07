@@ -157,8 +157,10 @@
 	// END "Stock by Attributes"
 
     for ($i=0, $n=sizeof($order->products); $i<$n; $i++) {
+      $zco_notifier->notify('NOTIFY_PACKINGSLIP_INLOOP', array('i'=>$i), $order->products[$i], $prod_img);
+
       echo '      <tr class="dataTableRow">' . "\n" .
-           '        <td class="dataTableContent" valign="top" align="right">' . $order->products[$i]['qty'] . '&nbsp;x</td>' . "\n" .
+           '        <td class="dataTableContent" valign="top" align="right">' . (zen_not_null($prod_img) ? '<img src="' . DIR_WS_CATALOG . DIR_WS_IMAGES . $prod_img .'" align="left" width="' . IMAGE_ON_INVOICE_IMAGE_WIDTH . '" height="' . IMAGE_ON_INVOICE_IMAGE_HEIGHT . '" />' : '') . $order->products[$i]['qty'] . '&nbsp;x</td>' . "\n" .
            '        <td class="dataTableContent" valign="top">' . $order->products[$i]['name'];
 
       if (isset($order->products[$i]['attributes']) && (sizeof($order->products[$i]['attributes']) > 0)) {

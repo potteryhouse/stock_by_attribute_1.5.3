@@ -83,7 +83,8 @@
 
 <?php if ($options_comment[$I] != '' and $options_comment_position[$I] == '1') { ?>
            <div class="ProductInfoComments"><?php echo $options_comment[$I]; ?></div>
-<?php } // END if Div_options_Comment    >
+<?php } // END if Div_options_Comment    
+?>
 
          <?php
        } // End FOR options_name 

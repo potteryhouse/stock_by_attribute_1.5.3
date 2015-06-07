@@ -920,7 +920,7 @@ class order extends base {
       $this->products_ordered_html .=
       '<tr>' . "\n" .
       '<td class="product-details" align="right" valign="top" width="30">' . $this->products[$i]['qty'] . '&nbsp;x</td>' . "\n" .
-      '<td class="product-details" valign="top">' . nl2br($this->products[$i]['name']) . ($this->products[$i]['model'] != '' ? ' (' . nl2br($this->products[$i]['model']) . ') ' : '') . "\n" .
+      '<td class="product-details" valign="top">' . nl2br($this->products[$i]['name']) .  ($this->products[$i]['customid'] != '' ? ' (' . nl2br($this->products[$i]['customid']) . ') ' : ($this->products[$i]['model'] != '' ? ' (' . nl2br($this->products[$i]['model']) . ') ' : '')) . "\n" .
       '<nobr>' .
       '<small><em> '. nl2br($this->products_ordered_attributes) .'</em></small>' .
       '</nobr>' .

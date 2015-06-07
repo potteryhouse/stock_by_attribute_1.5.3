@@ -237,34 +237,11 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
     
     if (STOCK_SHOW_IMAGE == 'true') {$html .= '<th class="thProdImage">'.PWA_PRODUCT_IMAGE.'</th>';}   
 
-    $html .= '<th class="thProdModel">'.PWA_PRODUCT_MODEL.'</th>            
-      <th class="thProdQty">'.PWA_QUANTITY_FOR_ALL_VARIANTS.'</th>
-      <th class="thProdAdd">'.PWA_ADD_QUANTITY.'</th> 
-      <th class="thProdSync">'.PWA_SYNC_QUANTITY.'</th>
+        $html .= '<th class="thProdModel">'.PWA_PRODUCT_MODEL.'</th>            
+              <th class="thProdQty">'.PWA_QUANTITY_FOR_ALL_VARIANTS.'</th>
+              <th class="thProdAdd">'.PWA_ADD_QUANTITY.'</th> 
+              <th class="thProdSync">'.PWA_SYNC_QUANTITY.'</th>
               </tr>';
-       
-/*        $retArr = array();*/
-        /*
-        $query =    'select distinct attrib.products_id, description.products_name, products.products_quantity, products.products_model, products.products_image
-                    FROM '.TABLE_PRODUCTS_ATTRIBUTES.' attrib, '.TABLE_PRODUCTS_DESCRIPTION.' description, '.TABLE_PRODUCTS.' products
-                    WHERE attrib.products_id = description.products_id and
-                    ' . $w . '
-                    attrib.products_id = products.products_id and description.language_id='.$language_id.' order by description.products_name 
-                    '.$SearchRange.'';
-        */
-/*        $query =    'select distinct pa.products_id, d.products_name, p.products_quantity, 
-						p.products_model, p.products_image, p.products_type, p.master_categories_id
-						
-						FROM '.TABLE_PRODUCTS_ATTRIBUTES.' pa
-						left join '.TABLE_PRODUCTS_DESCRIPTION.' d on (pa.products_id = d.products_id)
-						left join '.TABLE_PRODUCTS.' p on (pa.products_id = p.products_id)
-						
-						WHERE d.language_id='.$language_id.'
-						' . $w . '
-						order by d.products_name
-						'.$SearchRange.'';
-        
-        $products = $db->Execute($query);*/
         
         while(!$products->EOF){ 
 			    $html .= '<tr>'."\n";
@@ -335,7 +312,6 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
                   $html .= '<td class="stockAttributesCellSort" id="stockid3-'. $attribute_products->fields['stock_id'] .'">'.$attribute_products->fields['sort'].'</td>'."\n";
                   $html .= '<td class="stockAttributesCellCustomid" id="stockid4-'. $attribute_products->fields['stock_id'] .'">'.$attribute_products->fields['customid'].'</td>'."\n";
                   $html .= '<td class="stockAttributesCellTitle" id="stockid1-'. $attribute_products->fields['stock_id'] .'">'.$attribute_products->fields['title'].'</td>'."\n";
-//                  $html .= '<td title="The Custom ID MUST be Unique, no duplicates allowed!" class="stockAttributesCellCustomid" id="stockid3-'. $attribute_products->fields['stock_id'] .'">'.$attribute_products->fields['customid'].'</td>'."\n";
                   $html .= '<td class="stockAttributesCellEdit">'."\n";
                   $html .= '<a href="'.zen_href_link(FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK, "action=edit&amp;products_id=".$products->fields['products_id'].'&amp;attributes='.$attribute_products->fields['stock_attributes'].'&amp;q='.$attribute_products->fields['quantity'], 'NONSSL').'">'.PWA_EDIT_QUANTITY.'</a>'; //s_mack:prefill_quantity
                   $html .= '</td>'."\n";
@@ -718,16 +694,19 @@ function nullDataEntry($fieldtoNULL){
   	$products_id = zen_get_prid($products_id);
   
   	// check if there are attributes for this product
- 	$stock_has_attributes = $db->Execute('select products_attributes_id 
+ 	  $stock_has_attributes_query = 'select products_attributes_id 
   											from '.TABLE_PRODUCTS_ATTRIBUTES.' 
-  											where products_id = ' . (int)$products_id . '');
+  											where products_id = :products_id:';
+    $stock_has_attributes_query = $db->bindVars($stock_has_attributes_query, ':products_id:', $products_id, 'integer');
+    $stock_has_attributes = $db->Execute($stock_has_attributes_query);
 
   	if ( $stock_has_attributes->RecordCount() < 1 ) {
   		
   			//if no attributes return products_model
 			$no_attribute_stock_query = 'select products_model 
   										from '.TABLE_PRODUCTS.' 
-  										where products_id = '. (int)$products_id . ';';
+  										where products_id = :products_id:';
+      $no_attribute_stock_query = $db->bindVars($no_attribute_stock_query, ':products_id:', $products_id, 'integer');
   		$customid = $db->Execute($no_attribute_stock_query);
   		return $customid->fields['products_model'];
   	} 
@@ -757,7 +736,6 @@ function nullDataEntry($fieldtoNULL){
   					$attributes_new->MoveNext();
   				}
 
-// 					$stock_attributes = implode('","',$stock_attributes);
  					$stock_attributes = implode(',',$stock_attributes);
   			}
   			
@@ -795,7 +773,8 @@ function nullDataEntry($fieldtoNULL){
   			//Get product model
   			$customid_model_query = 'select products_model
 						  					from '.TABLE_PRODUCTS.'
-						  					where products_id = '. (int)$products_id . ';';
+						  					where products_id = :products_id:';
+			$customid_model_query = $db->bindVars($customid_model_query, ':products_id:', $products_id, 'integer');								
   			$customid = $db->Execute($customid_model_query);
   			//return result for display
   			return $customid->fields['products_model'];

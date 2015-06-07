@@ -2684,11 +2684,9 @@ function zen_copy_products_attributes($products_id_from, $products_id_to) {
     global $db;
 
     $products_price_sorter = zen_get_products_actual_price($product_id);
-
     $db->Execute("update " . TABLE_PRODUCTS . " set
          products_price_sorter='" . zen_db_prepare_input($products_price_sorter) . "'
          where products_id='" . (int)$product_id . "'");
-
   }
 
 ////

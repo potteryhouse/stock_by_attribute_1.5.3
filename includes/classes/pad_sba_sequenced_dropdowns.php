@@ -182,6 +182,13 @@ $o = 0;
       // js functions to set next dropdown options when a dropdown selection is made
       // do all but last attribute (nothing needs to happen when it changes except additional validation action to improve the customer experience)
       for ($curattr=0; $curattr<sizeof($attributes); $curattr++) {
+        for ($nextattr = $curattr+1; $nextattr < sizeof($attributes); $nextattr++) {
+          if ($attributes[$nextattr]['otype'] != PRODUCTS_OPTIONS_TYPE_READONLY) {
+            
+            break 1;
+          }
+        }
+        
         $attr=$attributes[$curattr];
         $out.="  function i".$attr['oid']."(frm) {\n";
         if ($curattr < sizeof($attributes)-1) {
@@ -341,7 +348,45 @@ $o = 0;
 		$out.="return true;\n";
       }
 	  }
+/*	  $out.="if (frm['id[".$attributes[0]['oid']."]'] == 0) {\n";
+      for ($i=0; $i<sizeof($attributes); $i++) {
+        $out.="    " . str_repeat("  ",$i);
+//Starts the checks of stock quantity.
+//        $out.='if (stk3';
+
+
+        $out.='if (stk3';
+        for ($j=0; $j<=$i; $j++) {
+          $out.="[frm['id[".$attributes[$j]['oid']."]'].value]";
+        }
+        $out.=") {\n";
+        $out.="     " . str_repeat("  ",sizeof($attributes)) . "if(frm['id[".$attributes[$j-1]['oid']."]'].value != 0" . /*" && frm['id[".$attributes[sizeof($attributes)-1]['oid']."]'].value != 0" .*//* ") {\n";
+		$out.="     " . str_repeat("  ",sizeof($attributes)+1) . "instk=true;\n";
+		$out.="     " . str_repeat("  ",sizeof($attributes)) . "}\n";
+      }
+//      $out.="    " . str_repeat("  ",sizeof($attributes)) . "instk=true;\n";
+      for ($i=sizeof($attributes)-1; $i>0; $i--) {
+        $out.="    " . str_repeat("  ",$i) . "}\n";
+      }
+      $out.="    }\n";
       $out.="}\n";
+        for ($j=sizeof($attributes)-1; $j>=0; $j--) {
+          $out.="    " . str_repeat("  ",0);
+          $out.='if (';
+          $out.="frm['id[".$attributes[$j]['oid']."]'].value == 0 && !instk";
+		  for ($i=$j-1; $i>=0; $i--) {
+		    $out.=" && frm['id[".$attributes[$i]['oid']."]'].value != 0";
+			//$out.=" && chkstk()";
+		  }
+		  $out.=") {\n";
+          $out.="    " . str_repeat("  ",1);
+		  $out.="return true;\n";
+          $out.="    " . str_repeat("  ",0);
+          $out.="}\n";
+		}*/
+/*	  $out.="    if (" . ( instk = false && true ? "" : "") . ") {\n";
+	  $out.="      \n";
+	  $out.="    }\n";*/
 //      $out.="    return instk;\n";
       $out.="  }\n";
 

@@ -87,14 +87,10 @@
         
         $out.="<tr>\n";
         $out.='  <td align="right" class="main"><b>'.$combname."</b></td>\n  <td class=\"main\">";
-        for ($i = 0; $i<sizeof($combinations); $i++) {
-		  if (isset($_GET['products_id']) && $_SESSION['cart']->contents[$_GET['products_id']]) {
-		      if ( $combinations[$i]['comb'] == $_SESSION['cart']->contents[$_GET['products_id']]['attributes']) {
-                $selected_combination = $i;
-			  }
-		  }
-		}
-		  
+        $_SESSION['combinations-selected'] = $combinations[$selected_combination];
+        $_SESSION['combinations-combinations'] = $combinations;
+        $_SESSION['combinations-selected-combination'] = $selected_combination;
+        $_SESSION['combinations-attributes'] = $attributes;
         $out.=zen_draw_pull_down_menu('attrcomb', $combinations, $combinations[$selected_combination]['id']);
         $out.="</td>\n";
         $out.="</tr>\n";
@@ -185,5 +181,18 @@
       return $out;
     }
 
-  }
+/*    function _draw_stocked_attributes() {
+      $out = '';
+    
+      $attributes = $this->_build_attributes_array(true, false);
+      if (sizeof($attributes)>0) {
+        foreach ($attributes as $stocked) {
+          $out .= '<tr><td align="right" class=main><b>' . $stocked['oname'] . ":</b></td><td class=main>" . zen_draw_pull_down_menu('id['.$stocked['oid'].']',array_values($stocked['ovals']),$stocked['default']) . "</td></tr>\n";
+        }
+      }
+      return $out;
+    }*/
+
+    
+  } // end pad_single_dropdown
 ?>

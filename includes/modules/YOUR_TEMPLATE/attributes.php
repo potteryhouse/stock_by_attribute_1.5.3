@@ -11,7 +11,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version GIT: $Id: Author: Ian Wilson  Tue Aug 14 14:56:11 2012 +0100 Modified in v1.5.1 $
  * 
- * Updated for Stock by Attributes 1.5.3.1
+ * Stock by Attributes 1.5.4 : mc12345678 15-08-22
  */
 if (!defined('IS_ADMIN_FLAG')) {
   die('Illegal Access');
@@ -23,39 +23,45 @@ $show_attributes_qty_prices_description = 'false';
 // limit to 1 for performance when processing larger tables
 //gets the number of associated attributes
 $sql = "select count(*) as total
-          from " . TABLE_PRODUCTS_OPTIONS . " po 
-			left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa ON (po.products_options_id = pa.options_id)
-          where    pa.products_id='" . (int)$_GET['products_id'] . "'
-            and      po.language_id = '" . (int)$_SESSION['languages_id'] . "'" .
+          from " . TABLE_PRODUCTS_OPTIONS . " popt
+      left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib ON (popt.products_options_id = patrib.options_id)
+          where patrib.products_id=:products_id:
+          and popt.language_id = :languages_id:" .
             " limit 1";
 
+            $sql = $db->bindVars($sql, ':products_id:', $_GET['products_id'], 'integer');
+            $sql = $db->bindVars($sql, ':languages_id:', $_SESSION['languages_id'], 'integer');
             $pr_attr = $db->Execute($sql);
 
-//only continue if there are attributes
+            //only continue if there are attributes
             if ($pr_attr->fields['total'] > 0) {
-			  //LPAD - Return the string argument, left-padded with the specified string 
-			  //example: LPAD(po.products_options_sort_order,11,"0") the field is 11 digits, and is left padded with 0
+            //LPAD - Return the string argument, left-padded with the specified string 
+            //example: LPAD(po.products_options_sort_order,11,"0") the field is 11 digits, and is left padded with 0
               if (PRODUCTS_OPTIONS_SORT_ORDER=='0') {
-                $options_order_by = ' order by LPAD(po.products_options_sort_order,11,"0")';
+                $options_order_by= ' order by LPAD(popt.products_options_sort_order,11,"0")';
               } else {
-                $options_order_by = ' order by po.products_options_name';
+                $options_order_by= ' order by popt.products_options_name';
               }
 
               //get the option/attribute list
-              $sql = "select distinct po.products_options_id, po.products_options_name, po.products_options_sort_order,
-                              po.products_options_type, po.products_options_length, po.products_options_comment,
-                              po.products_options_size,
-                              po.products_options_images_per_row,
-                              po.products_options_images_style,
-                              po.products_options_rows
-              from        " . TABLE_PRODUCTS_OPTIONS . " po
-              left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa ON (pa.options_id = po.products_options_id)
-              where           pa.products_id='" . (int)$_GET['products_id'] . "'             
-              and             po.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
+              $sql = "select distinct popt.products_options_id, popt.products_options_name, popt.products_options_sort_order,
+                              popt.products_options_type, popt.products_options_length, popt.products_options_comment,
+                              popt.products_options_size,
+                              popt.products_options_images_per_row,
+                              popt.products_options_images_style,
+                              popt.products_options_rows
+              from        " . TABLE_PRODUCTS_OPTIONS . " popt
+              left join " . TABLE_PRODUCTS_ATTRIBUTES . " patrib ON (patrib.options_id = popt.products_options_id)
+              where patrib.products_id= :products_id:
+              and popt.language_id = :languages_id: " .
               $options_order_by;
 
+              $sql = $db->bindVars($sql, ':products_id:', $_GET['products_id'], 'integer');
+              $sql = $db->bindVars($sql, ':languages_id:', $_SESSION['languages_id'], 'integer');
               $products_options_names = $db->Execute($sql);
-$products_options_names_count = $products_options_names->RecordCount();
+// BOF "Stock By Attribute" SBA Start
+              $products_options_names_count = $products_options_names->RecordCount();
+// EOF "Stock By Attribute" SBA End
               // iii 030813 added: initialize $number_of_uploads
               $number_of_uploads = 0;
 
@@ -69,11 +75,9 @@ $products_options_names_count = $products_options_names->RecordCount();
               $discount_amount = zen_get_discount_calc((int)$_GET['products_id']);
 
               $zv_display_select_option = 0;
-
               //loop for each option/attribute listed
               while (!$products_options_names->EOF) {
                 $products_options_array = array();
-                $options_menu_images = array();
 
                 /*
                 pov.products_options_values_id, pov.products_options_values_name,
@@ -83,22 +87,21 @@ $products_options_names_count = $products_options_names->RecordCount();
 				p.products_quantity
                 */
 
-    $sql = "select distinct	pov.products_options_values_id,
+                $sql = "select    pov.products_options_values_id,
                         pov.products_options_values_name,
-			                    pa.*, p.products_quantity, 
-                				" . ($products_options_names_count <= 1 ? " pas.stock_id as pasid, pas.quantity as pasqty, pas.sort,  pas.customid, pas.title, pas.product_attribute_combo, pas.stock_attributes, " : "") . " pas.products_id 
-
-		              from      " . TABLE_PRODUCTS_ATTRIBUTES . " pa
-		              left join " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov on (pa.options_values_id = pov.products_options_values_id)
-		              left join " . TABLE_PRODUCTS . " p on (pa.products_id = p.products_id)
-                
-		              left join " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " pas on 
-		              (p.products_id = pas.products_id and FIND_IN_SET(pa.products_attributes_id, pas.stock_attributes) > 0 )
+                        pa.*
+              from      " . TABLE_PRODUCTS_ATTRIBUTES . " pa, " . TABLE_PRODUCTS_OPTIONS_VALUES . " pov
               where     pa.products_id = '" . (int)$_GET['products_id'] . "'
               and       pa.options_id = '" . (int)$products_options_names->fields['products_options_id'] . "'
+              and       pa.options_values_id = pov.products_options_values_id
               and       pov.language_id = '" . (int)$_SESSION['languages_id'] . "' " .
                 $order_by;
 
+                // Start "Stock By Attributes" SBA
+                $zco_notifier->notify('NOTIFY_ATTRIBUTES_MODULE_OPTIONS_SQL');
+//                echo ($_isSBA ? 'true' : 'false') . "\n";
+                // End "Stock By Attributes" SBA
+                
                 $products_options = $db->Execute($sql);
 
                 $products_options_value_id = '';
@@ -113,90 +116,17 @@ $products_options_names_count = $products_options_names->RecordCount();
                 $tmp_attributes_image_row = 0;
                 $show_attributes_qty_prices_icon = 'false';
 
-    //process each attribute in the list
+                //process each attribute in the list
                 while (!$products_options->EOF) {
                   // reset
                   $products_options_display_price='';
                   $new_attributes_price= '';
                   $price_onetime = '';
 
-      // START "Stock by Attributes"  
-      //used to find if an attribute is read-only
-      $sqlRO = "select pa.attributes_display_only
-              			from " . TABLE_PRODUCTS_OPTIONS . " po
-              			left join " . TABLE_PRODUCTS_ATTRIBUTES . " pa on (pa.options_id = po.products_options_id)
-              			where pa.products_id='" . (int)$_GET['products_id'] . "'
-               			and pa.products_attributes_id = '" . (int)$products_options->fields["products_attributes_id"] . "' ";
-				$products_options_READONLY = $db->Execute($sqlRO);
-				
-				//echo 'ID: ' . $products_options->fields["products_attributes_id"] . ' Stock ID: ' . $qtyeachoption->fields['pasid'] . ' QTY: ' . $qtyeachoption->fields['pasqty'] . '<br />';//debug line
-				//add out of stock text based on qty
-				if( $products_options->fields['pasqty'] < 1 && STOCK_CHECK == 'true' &&  $products_options->fields['pasid'] > 0 ){
-					//test, only applicable to products with-out the read-only attribute set
-					if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-						$products_options->fields['products_options_values_name'] = $products_options->fields['products_options_values_name'] . PWA_OUT_OF_STOCK;
-					}
-				}
+                  // Start "Stock By Attributes" SBA
+                  $zco_notifier->notify('NOTIFY_ATTRIBUTES_MODULES_OPTIONS_VALUES_SET');
+                  // End "Stock By Attributes" SBA
 
-				//Add qty to atributes based on STOCK_SHOW_ATTRIB_LEVEL_STOCK setting
-				//Only add to Radio, Checkbox, and selection lists 
-				//PRODUCTS_OPTIONS_TYPE_RADIO PRODUCTS_OPTIONS_TYPE_CHECKBOX  
-				//Exclude the following:
-				//PRODUCTS_OPTIONS_TYPE_TEXT PRODUCTS_OPTIONS_TYPE_FILE PRODUCTS_OPTIONS_TYPE_READONLY
-				//PRODUCTS_OPTIONS_TYPE_SELECT_SBA
-				$PWA_STOCK_QTY = null;//initialize variable	
-				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_TEXT) {
-				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_FILE) {
-				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_READONLY) {
-				if ($products_options_names->fields['products_options_type'] != PRODUCTS_OPTIONS_TYPE_SELECT_SBA) {
-				
-					if( STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $products_options->fields['pasqty'] > 0 ){
-						//test, only applicable to products with-out the read-only attribute set
-						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							$PWA_STOCK_QTY = PWA_STOCK_QTY . $products_options->fields['pasqty'] . ' ';
-							//show custom ID if flag set to true
-							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
-								$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
-							}
-						}
-              } elseif (STOCK_SHOW_ATTRIB_LEVEL_STOCK == 'true' && $products_options->fields['pasqty'] < 1 && $products_options->fields['pasid'] < 1) {
-						//test, only applicable to products with-out the read-only attribute set
-						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							//use the qty from the product, unless it is 0, then set to out of stock.
-                  if ($products_options_names_count <= 1) {
-							if($products_options->fields['products_quantity'] > 0){
-								$PWA_STOCK_QTY = PWA_STOCK_QTY . $products_options->fields['products_quantity'] . ' ';
-                    } else {
-								$products_options->fields['products_options_values_name'] = $products_options->fields['products_options_values_name'] . PWA_OUT_OF_STOCK;
-							}
-                  }
-							
-							//show custom ID if flag set to true
-							if(STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND !empty($products_options->fields['customid'])){
-								$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
-							}
-						}
-              } elseif (STOCK_SBA_DISPLAY_CUSTOMID == 'true' AND ! empty($products_options->fields['customid'])) {
-						//show custom ID if flag set to true
-						//test, only applicable to products with-out the read-only attribute set
-						if( $products_options_READONLY->fields['attributes_display_only'] < 1 ){
-							$PWA_STOCK_QTY .= ' (' . $products_options->fields['customid'] . ') ';
-						}
-					}
-            }
-          }
-        }
-      }
-				
-                	//create image array for use in select list to rotate visable image on select.
-					if( !empty($products_options->fields['attributes_image']) ){
-	                  $options_menu_images[] = array('id' => $products_options->fields['products_options_values_id'],
-	                  'src' => 'images/'.$products_options->fields['attributes_image']);
-      } else {
-                		$options_menu_images[] = array('id' => $products_options->fields['products_options_values_id']);
-                	}
-                	// END "Stock by Attributes"
-                	
                   $products_options_array[] = array('id' => $products_options->fields['products_options_values_id'],
                   'text' => $products_options->fields['products_options_values_name']);
 
@@ -238,16 +168,11 @@ $products_options_names_count = $products_options_names->RecordCount();
 
                     if ($products_options->fields['options_values_price'] != '0' and ($products_options->fields['product_attribute_is_free'] != '1' and $product_info->fields['product_is_free'] != '1')) {
                       // show sale maker discount if a percentage
-                    	// START "Stock by Attributes"
-                    	if ( $products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_RADIO || $products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_CHECKBOX ) {
-	                      //use this if a PRODUCTS_OPTIONS_TYPE_RADIO or PRODUCTS_OPTIONS_TYPE_CHECKBOX
-	                      //class="productSpecialPrice" can be used in a CSS file to control the text properties, not compatable with selection lists
-	                      $products_options_display_price = ATTRIBUTES_PRICE_DELIMITER_PREFIX . '<span class="productSpecialPrice">' . $products_options->fields['price_prefix'] . $currencies->display_price($new_attributes_price, zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . '</span>' . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
-          } else {
-                    		//need to remove the <span> tag for selection lists and text boxes
-                    		$products_options_display_price = ATTRIBUTES_PRICE_DELIMITER_PREFIX . $products_options->fields['price_prefix'] . $currencies->display_price($new_attributes_price, zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
-                    	}
-                    	// END "Stock by Attributes"
+                      $products_options_display_price= ATTRIBUTES_PRICE_DELIMITER_PREFIX . $products_options->fields['price_prefix'] .
+                      $currencies->display_price($new_attributes_price, zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
+                      // Start "Stock By Attributes" SBA
+                      $zco_notifier->notify('NOTIFY_ATTRIBUTES_MODULE_SALE_MAKER_DISPLAY_PRICE_PERCENTAGE');
+                      // End "Stock By Attributes" SBA
                     } else {
                       // if product_is_free and product_attribute_is_free
                       if ($products_options->fields['product_attribute_is_free'] == '1' and $product_info->fields['product_is_free'] == '1') {
@@ -267,26 +192,11 @@ $products_options_names_count = $products_options_names->RecordCount();
                     $products_options_display_price .= $price_onetime;
 
                   } // approve
-				  
-				  // START "Stock by Attributes" added original price for display, and some formatting
-				  $originalpricedisplaytext = null;
-				  if( STOCK_SHOW_ORIGINAL_PRICE_STRUCK == 'true' && zen_get_attributes_price_final($products_options->fields["products_attributes_id"], 1, '', 'false') != $new_attributes_price ){
-					//Original price struck through
-				  	if ( $products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_RADIO || $products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_CHECKBOX ) {
-				  		//use this if a PRODUCTS_OPTIONS_TYPE_RADIO or PRODUCTS_OPTIONS_TYPE_CHECKBOX
-				  		//class="normalprice" can be used in a CSS file to control the text properties, not compatable with selection lists
-						$originalpricedisplaytext = ATTRIBUTES_PRICE_DELIMITER_PREFIX . '<span class="normalprice">' . $products_options->fields['price_prefix'] . $currencies->display_price( zen_get_attributes_price_final($products_options->fields["products_attributes_id"], 1, '', 'false'), zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . '</span>' . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
-        } else {
-				  		//need to remove the <span> tag for selection lists and text boxes
-				  		$originalpricedisplaytext = ATTRIBUTES_PRICE_DELIMITER_PREFIX . $products_options->fields['price_prefix'] . $currencies->display_price( zen_get_attributes_price_final($products_options->fields["products_attributes_id"], 1, '', 'false'), zen_get_tax_rate($product_info->fields['products_tax_class_id'])) . ATTRIBUTES_PRICE_DELIMITER_SUFFIX;
-				  	}
-				  }
-				 // END "Stock by Attributes"
-				  
-				  // START "Stock by Attributes"
-				  $products_options_display_price .=   $originalpricedisplaytext . $PWA_STOCK_QTY;
-				  // END "Stock by Attributes"
-				  
+      
+                  // Start "Stock By Attributes" SBA
+                  $zco_notifier->notify('NOTIFY_ATTRIBUTES_MODULE_ORIGINAL_PRICE');
+                  // End "Stock By Attributes" SBA
+
                   $products_options_array[sizeof($products_options_array)-1]['text'] .= $products_options_display_price;
 
                   // collect weight information if it exists
@@ -347,36 +257,20 @@ $products_options_names_count = $products_options_names->RecordCount();
                       }
                     }
 
-                    // START "Stock by Attributes"
-					//move default selected attribute if attribute is out of stock and check out is not allowed
-					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] > 0) ){
-                    	$selected_attribute = true;
-						$moveSelectedAttribute = false;	
-                    }
-                    $disablebackorder = null;
-					//disable radio and disable default selected
-                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] == 0 && !empty($products_options->fields['pasid']) )
-                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($products_options->fields['pasid']) ) 
-                      ){//|| $products_options_READONLY->fields['attributes_display_only'] == 1
-                    		 
-						if( $selected_attribute == true ){
-							$selected_attribute = false;
-							$moveSelectedAttribute = true;
-						}
-                    	$disablebackorder = 'disabled="disabled"';  	
-                    }
-                    // END "Stock by Attributes"
-                    
-                    // START "Stock by Attributes"
+                    // START "Stock by Attributes" SBA
+                    $zco_notifier->notify('NOTIFY_ATTRIBUTES_MODULE_ATTRIB_SELECTED');
+                    // END "Stock by Attributes" SBA
+
+                    // START "Stock by Attributes" SBA
                     switch ($products_options_names->fields['products_options_images_style']) {
                       case '0':
                       $tmp_radio .= zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton zero" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . '</label><br />' . "\n";
                       break;
                       case '1':
-                      $tmp_radio .= zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton one" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . ($products_options->fields['attributes_image'] != '' ? zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '' ) . '  ' : '') . $products_options_details . '</label><br />' . "\n";
+                      $tmp_radio .= zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton one" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . ($products_options->fields['attributes_image'] != '' ? zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '') . ' ' : '') . $products_options_details . '</label><br />' . "\n";
                       break;
                       case '2':
-                      $tmp_radio .= zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton two" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . ($products_options->fields['attributes_image'] != '' ? '<br />' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '' ) : '') . '</label><br />' . "\n";
+                      $tmp_radio .= zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton two" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . ($products_options->fields['attributes_image'] != '' ? '<br />' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '') : '') . '</label><br />' . "\n";
                       break;
                       case '3':
                       $tmp_attributes_image_row++;
@@ -389,7 +283,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                       if ($products_options->fields['attributes_image'] != '') {
                         $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsRadioButton three" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . $products_options_details_noname . '</label></div>' . "\n";
                       } else {
-                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']',  $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . '<label class="attribsRadioButton threeA" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . $products_options_details_noname . '</label></div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_radio_field('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . '<label class="attribsRadioButton threeA" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . $products_options_details_noname . '</label></div>' . "\n";
                       }
                       break;
 
@@ -463,38 +357,21 @@ $products_options_names_count = $products_options_names->RecordCount();
                       }
                     }
 
-                    // START "Stock by Attributes"
-					//move default selected attribute if attribute is out of stock and check out is not allowed
-					if( $moveSelectedAttribute == true && (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] > 0) ){
-                    	$selected_attribute = true;
-						$moveSelectedAttribute = false;	
-                    }
-                    $disablebackorder = null;
-					//disable radio and disable default selected
-                    if( (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['pasqty'] == 0 && !empty($products_options->fields['pasid']) )
-                     || ( STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0 && empty($products_options->fields['pasid']) ) 
-                      ){//|| $products_options_READONLY->fields['attributes_display_only'] == 1
-                    	
-                    	if( $selected_attribute == true ){
-							$selected_attribute = false;
-							$moveSelectedAttribute = true;
-						}
-                    	$disablebackorder = 'disabled="disabled"';  	
-                    }
-                    // END "Stock by Attributes"
-					
+                    // START "Stock by Attributes" SBA
+                    $zco_notifier->notify('NOTIFY_ATTRIBUTES_MODULE_ATTRIB_SELECTED');
+
                     /*
                     $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details .'</label><br />';
                     */
                     switch ($products_options_names->fields['products_options_images_style']) {
                       case '0':
-                      $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . '</label><br />' . "\n";
+                      $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . '</label><br />' . "\n";
                       break;
                       case '1':
-                      $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . ($products_options->fields['attributes_image'] != '' ? zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '' ) . '  ' : '') . $products_options_details . '</label><br />' . "\n";
+                      $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . ($products_options->fields['attributes_image'] != '' ? zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '') . ' ' : '') . $products_options_details . '</label><br />' . "\n";
                       break;
                       case '2':
-                      $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . ($products_options->fields['attributes_image'] != '' ? '<br />' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '' ) : '') . '</label><br />' . "\n";
+                      $tmp_checkbox .= zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options_details . ($products_options->fields['attributes_image'] != '' ? '<br />' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image'], '', '', '') : '') . '</label><br />' . "\n";
                       break;
 
                       case '3':
@@ -507,9 +384,9 @@ $products_options_names_count = $products_options_names->RecordCount();
                       }
 
                       if ($products_options->fields['attributes_image'] != '') {
-                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . $products_options_details_noname . '</label></div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . $products_options_details_noname . '</label></div>' . "\n";
                       } else {
-                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . $products_options_details_noname . '</label></div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . $products_options_details_noname . '</label></div>' . "\n";
                       }
                       break;
 
@@ -523,9 +400,9 @@ $products_options_names_count = $products_options_names->RecordCount();
                       }
 
                       if ($products_options->fields['attributes_image'] != '') {
-                        $tmp_attributes_image .= '<div class="attribImg">' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label><br />' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '</div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label><br />' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '</div>' . "\n";
                       } else {
-                        $tmp_attributes_image .= '<div class="attribImg">' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label><br />' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']',$products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '</div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label><br />' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '</div>' . "\n";
                       }
                       break;
 
@@ -539,14 +416,14 @@ $products_options_names_count = $products_options_names->RecordCount();
                       }
 
                       if ($products_options->fields['attributes_image'] != '') {
-                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label></div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . zen_image(DIR_WS_IMAGES . $products_options->fields['attributes_image']) . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . (PRODUCT_IMAGES_ATTRIBUTES_NAMES == '1' ? '<br />' . $products_options->fields['products_options_values_name'] : '') . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label></div>' . "\n";
                       } else {
-                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . ']['.$products_options_value_id.']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label></div>' . "\n";
+                        $tmp_attributes_image .= '<div class="attribImg">' . zen_draw_checkbox_field('id[' . $products_options_names->fields['products_options_id'] . '][' . $products_options_value_id . ']', $products_options_value_id, $selected_attribute, $disablebackorder . 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '"') . '<br />' . '<label class="attribsCheckbox" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '-' . $products_options_value_id . '">' . $products_options->fields['products_options_values_name'] . ($products_options_details_noname != '' ? '<br />' . $products_options_details_noname : '') . '</label></div>' . "\n";
                       }
                       break;
                     }
                   }
-                  // END "Stock by Attributes"
+                  // END "Stock by Attributes" SBA
 
                   // text
                   if (($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_TEXT)) {
@@ -670,6 +547,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                 //echo 'TEST I AM ' . $products_options_names->fields['products_options_name'] . ' Type - ' . $products_options_names->fields['products_options_type'] . '<br />';
                 // Option Name Type Display
                 switch (true) {
+
                   // text
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_TEXT):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -681,6 +559,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
+
                   // checkbox
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_CHECKBOX):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -692,6 +571,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
+
                   // radio buttons
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_RADIO):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -703,6 +583,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
+
                   // file upload
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_FILE):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -714,6 +595,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
+
                   // READONLY
                   case ($products_options_names->fields['products_options_type'] == PRODUCTS_OPTIONS_TYPE_READONLY):
                   $options_name[] = $products_options_names->fields['products_options_name'];
@@ -721,6 +603,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
+
                   // dropdown menu auto switch to selected radio button display
                   case ($products_options->RecordCount() == 1):
                   if ($show_attributes_qty_prices_icon == 'true') {
@@ -732,6 +615,7 @@ $products_options_names_count = $products_options_names->RecordCount();
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
+
                   default:
                   // normal dropdown "SELECT LIST" menu display
                   if (isset($_SESSION['cart']->contents[$prod_id]['attributes'][$products_options_names->fields['products_options_id']])) {
@@ -757,30 +641,28 @@ $products_options_names_count = $products_options_names->RecordCount();
                     $options_name[] = '<label class="attribsSelect" for="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '">' . $products_options_names->fields['products_options_name'] . '</label>';
                   }
 
-                  // START "Stock by Attributes"
+                  // START "Stock by Attributes" SBA
                   $disablebackorder = null;
                   //disable default selected if out of stock
-                  if( (STOCK_ALLOW_CHECKOUT == 'false')
-                   || (STOCK_ALLOW_CHECKOUT == 'false' && $products_options->fields['products_quantity'] <= 0) ){
-                 	$disablebackorder = 'disabled="disabled"';
+                  if (STOCK_ALLOW_CHECKOUT == 'false') {
+                    $disablebackorder = ' disabled="disabled" ';
                   }
                   //var_dump($products_options_array);//Debug Line
                   //added new image rotate ability ($options_menu_images);
                   $options_menu[] = zen_draw_pull_down_menu_SBAmod('id[' . $products_options_names->fields['products_options_id'] . ']', $products_options_array, $selected_attribute, 'id="' . 'attrib-' . $products_options_names->fields['products_options_id'] . '"' . ' class="sbaselectlist"', false, $disablebackorder, $options_menu_images) . "\n";
-                  // END "Stock by Attributes"
-                  
+                  // END "Stock by Attributes" SBA
+
                   $options_comment[] = $products_options_names->fields['products_options_comment'];
                   $options_comment_position[] = ($products_options_names->fields['products_options_comment_position'] == '1' ? '1' : '0');
                   break;
                 }
 
                 // attributes images table
-                // START "Stock by Attributes"
-                if(SBA_SHOW_IMAGE_ON_PRODUCT_INFO == 'true' ){
-                $options_attributes_image[] = trim($tmp_attributes_image) . "\n";
+                // START "Stock by Attributes" SBA
+                if (SBA_SHOW_IMAGE_ON_PRODUCT_INFO == 'true') {
+                  $options_attributes_image[] = trim($tmp_attributes_image) . "\n";
                 }
-                // END "Stock by Attributes"
-                
+                // END "Stock by Attributes" SBA
                 //Next Item
                 $products_options_names->MoveNext();
               }
@@ -789,4 +671,3 @@ $products_options_names_count = $products_options_names->RecordCount();
               //      zen_draw_hidden_field('number_of_uploads', $_GET['number_of_uploads']);
               zen_draw_hidden_field('number_of_uploads', $number_of_uploads);
             }
-

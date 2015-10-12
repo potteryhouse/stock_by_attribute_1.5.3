@@ -3,12 +3,32 @@
 
 class products_with_attributes_stock_admin extends base {
 
+  //
+  private $_customid = array();
+  private $_productI;  
+/*  private $_productI;
+  
+  private $_i;
+
+  private $_stock_info = array();
+  
+  private $_attribute_stock_left;
+
+  private $_stock_values;*/
+  
   /*
    * This is the observer for the admin side of SBA currently covering admin/includes/functions/general.php file to support Stock By Attributes when the order is being processed at the end of the purchase.
    */
   function products_with_attributes_stock_admin() {
-		global $zco_notifier;
-		$zco_notifier->attach($this, array('NOTIFIER_ADMIN_ZEN_REMOVE_PRODUCT', 'NOTIFIER_ADMIN_ZEN_REMOVE_ORDER', 'NOTIFIER_ADMIN_ZEN_DELETE_PRODUCTS_ATTRIBUTES')); 
+//		global $zco_notifier;
+    
+    $attachNotifier = array();
+    $attachNotifier[] = 'NOTIFIER_ADMIN_ZEN_REMOVE_PRODUCT';
+    $attachNotifier[] = 'NOTIFIER_ADMIN_ZEN_REMOVE_ORDER';
+    $attachNotifier[] = 'NOTIFIER_ADMIN_ZEN_DELETE_PRODUCTS_ATTRIBUTES';
+
+//    $zco_notifier->attach($this, $attachNotifier); 
+    $this->attach($this, $attachNotifier); 
 	}	
 
   /*
@@ -68,27 +88,30 @@ class products_with_attributes_stock_admin extends base {
   function update(&$callingClass, $notifier, $paramsArray) {
     global $db;
     
+    // Duplicate of updateNotifierAdminZenDeleteProductsAttributes
     if ($notifier == 'NOTIFIER_ADMIN_ZEN_DELETE_PRODUCTS_ATTRIBUTES '){
       //admin/includes/functions/general.php
       $delete_product_id = $paramsArray['delete_product_id'];
+      updateNotifierAdminZenDeleteProductsAttributes($callingClass, $notifier, $paramsArray, $delete_product_id);
       /* START STOCK BY ATTRIBUTES */
-      $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " where products_id = '" . (int)$delete_product_id . "'");
-    /* END STOCK BY ATTRIBUTES */
-      
+//      $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . " where products_id = '" . (int)$delete_product_id . "'");
+      /* END STOCK BY ATTRIBUTES */
     }
     
+    // Duplicate of updateNotifierAdminZenRemoveOrder
     if ($notifier == 'NOTIFIER_ADMIN_ZEN_REMOVE_ORDER'){  
       //admin/includes/functions/general.php
       $restock = $paramsArray['restock'];
       $order_id = $paramsArray['order_id'];
       
-      if ($restock == 'on') {
+      updateNotifierAdminZenRemoveOrder($callingClass, $notifier, $paramsArray, $order_id, $restock);
+/*      if ($restock == 'on') {
         $order = $db->Execute("select products_id, products_quantity
                                from " . TABLE_ORDERS_PRODUCTS . "
                                where orders_id = '" . (int)$order_id . "'");
 
         while (!$order->EOF) {
-        // START SBA //restored db //mc12345678 update the SBA quantities based on order delete.
+        */ // START SBA //restored db //mc12345678 update the SBA quantities based on order delete.
 
 /*
  * Need to take the data collected above, (products_id to find the matching order record 
@@ -96,7 +119,7 @@ class products_with_attributes_stock_admin extends base {
  * Records that match are ones on which quantities can be affected.
  */
 
-          $db->Execute("update " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
+/*          $db->Execute("update " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
                         set quantity = quantity + " . $order->fields['products_quantity'] . "
                         where products_id = '" . (int)$order->fields['products_id'] . "'
                         and stock_attributes in (select stock_attribute from " . TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK . " where orders_id = '" . (int)$order_id . "' and products_prid = '" . (int)$order->fields['products_prid'] . "')"
@@ -106,18 +129,20 @@ class products_with_attributes_stock_admin extends base {
           $order->MoveNext();
         }
       }
-
+*/
 /* START STOCK BY ATTRIBUTES */
-      $db->Execute("delete from " . TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK . "
-                  where orders_id = '" . (int)$order_id . "'");
+/*      $db->Execute("delete from " . TABLE_ORDERS_PRODUCTS_ATTRIBUTES_STOCK . "
+                  where orders_id = '" . (int)$order_id . "'");*/
 /* END STOCK BY ATTRIBUTES */
     }
   
+    // Duplicate of updateNotifierAdminZenRemoveProduct
     if ($notifier == 'NOTIFIER_ADMIN_ZEN_REMOVE_PRODUCT'){
       //admin/includes/functions/general.php
       $product_id = $paramsArray['product_id']; //=>$product_id
-      $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
-                  where products_id = '" . (int)$product_id . "'");
+      updateNotifierAdminZenRemoveProduct($callingClass, $notifier, $paramsArray, $product_id);
+/*      $db->Execute("delete from " . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . "
+                  where products_id = '" . (int)$product_id . "'");*/
     }
 	} //end update function - mc12345678
 }

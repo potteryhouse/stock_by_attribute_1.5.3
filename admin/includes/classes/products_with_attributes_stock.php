@@ -7,7 +7,7 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
  *
- * Updated for Stock by Attributes 1.5.3.1
+ * Stock by Attributes 1.5.4  mc12345678 15-08-16
  */
 
 if (!defined('IS_ADMIN_FLAG')) {
@@ -194,7 +194,10 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
       		//$w = "( p.products_id = '$ReturnedProductID' ) AND  " ;//sets returned record to display
       		$w = " AND ( p.products_id = '$ReturnedProductID' ) " ;//sets returned record to display
 	      	$SearchRange = "limit 1";//show only selected record
-	  	}
+	  	} /*elseif ( $ReturnedProductID != null && isset($_GET['search'])) {
+      		$ReturnedProductID = zen_db_input($ReturnedProductID);
+	  		$NumberRecordsShown = zen_db_input($NumberRecordsShown);
+      }*/
 	  	elseif( $NumberRecordsShown > 0 && $SearchBoxOnly == 'false' ){
 	  		$NumberRecordsShown = zen_db_input($NumberRecordsShown);
 			$SearchRange = " limit $NumberRecordsShown";//sets start record and total number of records to display
@@ -204,6 +207,17 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
 		}
 
         $retArr = array();
+/*        $query_products =    'select distinct pa.products_id, d.products_name, p.products_quantity, 
+						p.products_model, p.products_image, p.products_type, p.master_categories_id
+						
+						FROM '.TABLE_PRODUCTS_ATTRIBUTES.' pa
+						left join '.TABLE_PRODUCTS_DESCRIPTION.' d on (pa.products_id = d.products_id)
+						left join '.TABLE_PRODUCTS.' p on (pa.products_id = p.products_id)
+						
+						WHERE d.language_id='.$language_id.'
+						' . $w . '
+						order by d.products_name
+						'.$SearchRange.'';*/
         if (isset($_GET['page']) && ($_GET['page'] > 1)) $rows = $_GET['page'] * STOCK_SET_SBA_NUMRECORDS - STOCK_SET_SBA_NUMRECORDS;
 
         $query_products =    "select distinct pa.products_id, d.products_name, p.products_quantity, p.products_model, p.products_image, p.products_type, p.master_categories_id FROM ".TABLE_PRODUCTS_ATTRIBUTES." pa, ".TABLE_PRODUCTS_DESCRIPTION." d, ".TABLE_PRODUCTS." p WHERE d.language_id='".$language_id."' and pa.products_id = d.products_id and pa.products_id = p.products_id " . $w . " order by d.products_name ".$SearchRange."";
@@ -258,7 +272,7 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
 		        //$html .= '<td class="tdProdModel">'.$products->fields['products_model'] .' </td>';
 		        $html .= '<td class="tdProdModel">'.$products->fields['products_model'] . '<br /><a href="'.zen_href_link(FILENAME_PRODUCT, "page=1&amp;product_type=".$products->fields['products_type']."&amp;cPath=".$products->fields['master_categories_id']."&amp;pID=".$products->fields['products_id']."&amp;action=new_product", 'NONSSL').'">Link</a> </td>';
 		        $html .= '<td class="tdProdQty">'.$products->fields['products_quantity'].'</td>';
-		        $html .= '<td class="tdProdAdd"><a href="'.zen_href_link(FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK, "action=add&amp;products_id=".$products->fields['products_id'], 'NONSSL').'">' . PWA_ADD_QUANTITY . '</a></td>';
+		        $html .= '<td class="tdProdAdd"><a href="'.zen_href_link(FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK, "action=add&amp;products_id=".$products->fields['products_id'], 'NONSSL').'">' . PWA_ADD_QUANTITY . '</a><br /><br /><a href="'.zen_href_link(FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK, "action=delete_all&amp;products_id=".$products->fields['products_id'], 'NONSSL').'">'.PWA_DELETE_VARIANT_ALL.'</a></td>';
 		        $html .= '<td class="tdProdSync"><a href="'.zen_href_link(FILENAME_PRODUCTS_WITH_ATTRIBUTES_STOCK, "action=resync&amp;products_id=".$products->fields['products_id'], 'NONSSL').'">' . PWA_SYNC_QUANTITY . '</a></td>';
 		        $html .= '</tr>'."\n";
 		        $html .= '</table>'."\n";
@@ -292,7 +306,19 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
                   $html .= '<td>' . $attribute_products->fields['product_attribute_combo'] . '</td>'."\n";
                   $html .= '<td class="stockAttributesCellVariant">'."\n";
                  
-                  $attributes_of_stock = explode(',',$attribute_products->fields['stock_attributes']);
+                  $sort2_query = "SELECT DISTINCT pa.products_attributes_id 
+                         FROM " . TABLE_PRODUCTS_ATTRIBUTES . " pa
+			             LEFT JOIN " . TABLE_PRODUCTS_OPTIONS . " po on (po.products_options_id = pa.options_id) 
+                         WHERE pa.products_attributes_id in (" . $attribute_products->fields['stock_attributes'] . ")
+                         ORDER BY po.products_options_sort_order ASC;"; 
+                  $sort_class = $db->Execute($sort2_query);
+                  $array_temp_sorted_array = array();
+                  $attributes_of_stock = array();
+                  while (!$sort_class->EOF) {
+                    $attributes_of_stock[] = $sort_class->fields['products_attributes_id'];
+                    $sort_class->MoveNext();
+                  }
+
                   $attributes_output = array();
                   foreach($attributes_of_stock as $attri_id)
                   {
@@ -304,7 +330,7 @@ function displayFilteredRows($SearchBoxOnly = null, $NumberRecordsShown = null, 
                         $attributes_output[] = '<strong>'.$stock_attribute['option'].':</strong> '.$stock_attribute['value'].'<br />';
                       }
                   }
-                  sort($attributes_output);
+//                  sort($attributes_output);
                   $html .= implode("\n",$attributes_output);
 
                   $html .= '</td>'."\n";
@@ -736,7 +762,7 @@ function nullDataEntry($fieldtoNULL){
   					$attributes_new->MoveNext();
   				}
 
- 					$stock_attributes = implode(',',$stock_attributes);
+				$stock_attributes_comb = implode(',',$stock_attributes);
   			}
   			
   			//Get product model
@@ -747,12 +773,24 @@ function nullDataEntry($fieldtoNULL){
   			//Get custom id as products_model
   			$customid_query = 'select customid as products_model
 		  							from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' 
-		  							where products_id = '.(int)$products_id.' 
-		  							and stock_attributes in ("'.$stock_attributes.'");';  
+		  							where products_id = :products_id: 
+		  							and stock_attributes in ( ":stock_attributes:");'; 
+        $customid_query = $db->bindVars($customid_query, ':products_id:', $products_id, 'integer');
+        $customid_query = $db->bindVars($customid_query, ':stock_attributes:', $stock_attributes_comb, 'passthru');
+  		$customid = $db->Execute($customid_query); //moved to inside this loop as for some reason it has made
+        if (!$customid->RecordCount()){ // if a customid does not exist for the combination of attributes then perhaps the attributes are individually listed.
+  			  $customid_query = 'select customid as products_model
+		  							from '.TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK.' 
+		  							where products_id = :products_id: 
+		  							and stock_attributes = :stock_attributes:'; 
+          $customid_query = $db->bindVars($customid_query, ':products_id:', $products_id, 'integer');
+          $customid_query = $db->bindVars($customid_query, ':stock_attributes:', $stock_attributes, 'string');
+  		    $customid = $db->Execute($customid_query); //moved to inside this loop as for some reason it has made
+        }
   		}
   		
-  		$customid = $db->Execute($customid_query);
-  		if($customid->fields['products_model']){
+//  		$customid = $db->Execute($customid_query);
+        if($customid->fields['products_model']){
   		
 	  		//Test to see if a custom ID exists
 	  		//if there are custom IDs with the attribute, then return them.

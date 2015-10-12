@@ -157,7 +157,7 @@
 	// END "Stock by Attributes"
 
     for ($i=0, $n=sizeof($order->products); $i<$n; $i++) {
-      $zco_notifier->notify('NOTIFY_PACKINGSLIP_INLOOP', array('i'=>$i), $order->products[$i], $prod_img);
+      $zco_notifier->notify('NOTIFY_PACKINGSLIP_INLOOP', array('i'=>$i, 'productsI'=>$order->products[$i], 'prod_img'=>$prod_img), $order->products[$i], $prod_img);
 
       echo '      <tr class="dataTableRow">' . "\n" .
            '        <td class="dataTableContent" valign="top" align="right">' . (zen_not_null($prod_img) ? '<img src="' . DIR_WS_CATALOG . DIR_WS_IMAGES . $prod_img .'" align="left" width="' . IMAGE_ON_INVOICE_IMAGE_WIDTH . '" height="' . IMAGE_ON_INVOICE_IMAGE_HEIGHT . '" />' : '') . $order->products[$i]['qty'] . '&nbsp;x</td>' . "\n" .
@@ -165,9 +165,11 @@
 
       if (isset($order->products[$i]['attributes']) && (sizeof($order->products[$i]['attributes']) > 0)) {
         for ($j=0, $k=sizeof($order->products[$i]['attributes']); $j<$k; $j++) {
+          $zco_notifier->notify('NOTIFY_PACKINGSLIP_IN_ATTRIB_LOOP', array('i'=>$i, 'j'=>$j, 'productsI'=>$order->products[$i], 'prod_img'=>$prod_img), $order->products[$i], $prod_img);
 
 			//"Stock by Attributes" add custom ID to display
-			$customid = null;
+			
+		/*	$customid = null;
 			//test if this is to be displayed
 			if( STOCK_SBA_DISPLAY_CUSTOMID == 'true'){
         $attributes = array(); // mc12345678 moved into if statement otherwise doesn't apply in code.
@@ -180,9 +182,9 @@
 					//add name prefix (this is set in the admin language file)
 					$customid = PWA_CUSTOMID_NAME . $customid;
 				}
-			}
+			}*/
 		  //"Stock by Attributes" add custom ID to display
-          echo '<br><nobr><small>&nbsp;<i> - ' . $order->products[$i]['attributes'][$j]['option'] . ': ' . nl2br(zen_output_string_protected($order->products[$i]['attributes'][$j]['value'])) . ' (' . $customid . ') ';
+          echo '<br><nobr><small>&nbsp;<i> - ' . $order->products[$i]['attributes'][$j]['option'] . ': ' . nl2br(zen_output_string_protected($order->products[$i]['attributes'][$j]['value'])) . $customid;
           // END "Stock by Attributes"
           echo '</i></small></nobr>';
         }

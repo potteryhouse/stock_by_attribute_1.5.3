@@ -173,7 +173,27 @@ function removeDynDropdownsConfiguration() {
 		$msg = ' Error Message: ' . $db->error;
 	}
 	array_push($resultMmessage, '&bull; Deleted STOCK_SET_SBA_NUMRECORDS  ' . $msg);
-	
+
+        $sql = "DELETE IGNORE FROM `".TABLE_CONFIGURATION."` WHERE `configuration_key` = 'PRODINFO_ATTRIBUTE_DYNAMIC_STATUS'";
+        $db->Execute($sql);
+        if($db->error){
+          $msg = ' Error Message: ' . $db->error;
+        }
+        array_push($resultMmessage, '&bull; Deleted PRODINFO_ATTRIBUTE_DYNAMIC_STATUS ' . $msg);
+        
+        $sql = "DELETE IGNORE FROM `".TABLE_CONFIGURATION."` WHERE `configuration_key` = 'SBA_ZC_DEFAULT'";
+        $db->Execute($sql);
+        if($db->error){
+          $msg = ' Error Message: ' . $db->error;
+        }
+        array_push($resultMmessage, '&bull; Deleted SBA_ZC_DEFAULT ' . $msg);
+        
+        $sql = "DELETE IGNORE FROM `".TABLE_CONFIGURATION."` WHERE `configuration_key` = 'PRODINFO_ATTRIBUTE_POPUP_OUT_OF_STOCK'";
+        $db->Execute($sql);
+        if($db->error){
+          $msg = ' Error Message: ' . $db->error;
+        }
+        array_push($resultMmessage, '&bull; Deleted PRODINFO_ATTRIBUTE_POPUP_OUT_OF_STOCK ' . $msg);
 /*	$sql = "DELETE IGNORE FROM `".TABLE_CONFIGURATION."` WHERE `configuration_key` = 'SBA_SHOW_IMAGE_ON_PRODUCT_INFO'";
 	$db->Execute($sql);
 	if($db->error){	
@@ -223,7 +243,6 @@ function removeSBAconfiguration(){
 	DELETE FROM configuration  WHERE  configuration_key = 'PRODUCTS_OPTIONS_TYPE_SELECT_SBA';
 	DELETE FROM products_options_types WHERE products_options_types_name = 'SBA Select List (Dropdown) Basic';
 	*/
-	$msg = null;
 	array_push($resultMmessage, '<br /><b>Clean-Up</b>, Removing from configuration: ');
 	
 	$sql = "DELETE IGNORE FROM `".TABLE_CONFIGURATION."` WHERE `configuration_key` = 'STOCK_SHOW_IMAGE'";
@@ -618,18 +637,19 @@ function insertDynDropdownsConfiguration(){
 	       date_added, use_function, set_function) 
 		
 	       VALUES 
-		    ('Enable Dynamic Dropdowns', 'PRODINFO_ATTRIBUTE_DYNAMIC_STATUS', '2', 'Selects status of using this portion of the SBA plugin (Dynamic Dropdowns).', :configuration_id:, 4, now(), NULL, 'zen_cfg_select_drop_down(array(array(\'id\'=>\'0\', \'text\'=>\'Off\'), array(\'id\'=>\'1\', \'text''=>\'On for All SBA Tracked\'), array(\'id\'=>\'2\', \'text''=>\'On for Multi-Attribute Only\'), array(\'id\'=>\'3\', \'text''=>\'On for Single-Attribute Only\'), ),'),
-        ('Product Info Single Attribute Display Plugin', 'PRODINFO_ATTRIBUTE_PLUGIN_SINGLE', 'multiple_dropdowns', 'The plugin used for displaying attributes on the product information page.', :configuration_id:, 10, now(), NULL, 'zen_cfg_select_option(array(\'single_radioset\', \'single_dropdown\',\'multiple_dropdowns\',\'sequenced_dropdowns\',\'sba_sequenced_dropdowns\'),'),
-	
-	        ('Product Info Multiple Attribute Display Plugin', 'PRODINFO_ATTRIBUTE_PLUGIN_MULTI', 'sba_sequenced_dropdowns', 'The plugin used for displaying attributes on the product information page.', :configuration_id:, 20, now(), NULL, 'zen_cfg_select_option(array(\'single_radioset\', \'single_dropdown\',\'multiple_dropdowns\',\'sequenced_dropdowns\',\'sba_sequenced_dropdowns\'),'),
-      ('Show Out of Stock Attributes', 'PRODINFO_ATTRIBUTE_SHOW_OUT_OF_STOCK', 'True', 'Controls the display of out of stock attributes.', :configuration_id:, 10, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),'),
-      ('Mark Out of Stock Attributes', 'PRODINFO_ATTRIBUTE_MARK_OUT_OF_STOCK', 'Right', 'Controls how out of stock attributes are marked as out of stock.', :configuration_id:, 30, now(), NULL, 'zen_cfg_select_option(array(\'None\', \'Right\', \'Left\'),'),
-      ('Display Out of Stock Message Line', 'PRODINFO_ATTRIBUTE_OUT_OF_STOCK_MSGLINE', 'True', 'Controls the display of a message line indicating an out of stock attributes is selected.', :configuration_id:, 40, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),'),
-			('Prevent Adding Out of Stock to Cart', 'PRODINFO_ATTRIBUTE_NO_ADD_OUT_OF_STOCK', 'True', 'Prevents adding an out of stock attribute combination to the cart.', :configuration_id:, 50, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),'),
+		    ('Enable Dynamic Dropdowns', 'PRODINFO_ATTRIBUTE_DYNAMIC_STATUS', '2', 'Selects status of using this portion of the SBA plugin (Dynamic Dropdowns).', :configuration_id:, 10, now(), NULL, 'zen_cfg_select_drop_down(array(array(\'id\'=>\'0\', \'text\'=>\'Off\'), array(\'id\'=>\'1\', \'text''=>\'On for All SBA Tracked\'), array(\'id\'=>\'2\', \'text''=>\'On for Multi-Attribute Only\'), array(\'id\'=>\'3\', \'text''=>\'On for Single-Attribute Only\'), ),'),
+        ('Product Info Single Attribute Display Plugin', 'PRODINFO_ATTRIBUTE_PLUGIN_SINGLE', 'multiple_dropdowns', 'The plugin used for displaying attributes on the product information page.', :configuration_id:, 20, now(), NULL, 'zen_cfg_select_option(array(\'single_radioset\', \'single_dropdown\',\'multiple_dropdowns\',\'sequenced_dropdowns\',\'sba_sequenced_dropdowns\'),'),
+	        ('Product Info Multiple Attribute Display Plugin', 'PRODINFO_ATTRIBUTE_PLUGIN_MULTI', 'sba_sequenced_dropdowns', 'The plugin used for displaying attributes on the product information page.', :configuration_id:, 30, now(), NULL, 'zen_cfg_select_option(array(\'single_radioset\', \'single_dropdown\',\'multiple_dropdowns\',\'sequenced_dropdowns\',\'sba_sequenced_dropdowns\'),'),
+    ('Use ZC default HTML Attribute Tags', 'SBA_ZC_DEFAULT', 'true', 'Controls whether to use ZC HTML tags around attributes or to use the Dynamic Dropdown Version of the tags to support modifications made by others over the years but also compatibility with other ZC plugins.<br /><br />Options:<br />true (Default)<br />false.', :configuration_id:, 40, now(), NULL, 'zen_cfg_select_option(array(\'true\', \'false\'),'),
+      ('Show Out of Stock Attributes', 'PRODINFO_ATTRIBUTE_SHOW_OUT_OF_STOCK', 'True', 'Controls the display of out of stock attributes.', :configuration_id:, 50, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),'),
+    ('Mark Out of Stock Attributes', 'PRODINFO_ATTRIBUTE_MARK_OUT_OF_STOCK', 'Right', 'Controls how out of stock attributes are marked as out of stock.', :configuration_id:, 60, now(), NULL, 'zen_cfg_select_option(array(\'None\', \'Right\', \'Left\'),'),
+      ('Display Out of Stock Message Line', 'PRODINFO_ATTRIBUTE_OUT_OF_STOCK_MSGLINE', 'True', 'Controls the display of a message line indicating an out of stock attributes is selected.', :configuration_id:, 70, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),'),
+			('Prevent Adding Out of Stock to Cart', 'PRODINFO_ATTRIBUTE_NO_ADD_OUT_OF_STOCK', 'True', 'Prevents adding an out of stock attribute combination to the cart.', :configuration_id:, 80, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),'),
       ('SBA Number of Records to Displayed', 'STOCK_SET_SBA_NUMRECORDS', '25', 
 				'Number of records to show on page:',
 				:configuration_id:, 60, now(), NULL, NULL),
-	  ('Display Javascript Popup for Out-of-Stock Selection', 'PRODINFO_ATTRIBUTE_POPUP_OUT_OF_STOCK', 'True', 'Controls whether to display or not the message for when a products attribute is out-of-stock.', :configuration_id:, 45, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),');";
+	  ('Display Javascript Popup for Out-of-Stock Selection', 'PRODINFO_ATTRIBUTE_POPUP_OUT_OF_STOCK', 'True', 'Controls whether to display or not the message for when a products attribute is out-of-stock.', :configuration_id:, 90, now(), NULL, 'zen_cfg_select_option(array(\'True\', \'False\'),')
+    ;";
   $sql = $db->bindVars($sql, ':configuration_id:', $configuration_id, 'integer');
   $db->Execute($sql);
 

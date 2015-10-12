@@ -9,10 +9,11 @@
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
  * @version $Id:  $
  * 
- * Stock by Attributes 1.5.4
+ * Stock by Attributes 1.5.4 : mc12345678 15-08-22
  */
 
 //test for multiple entry of same product in customer's shopping cart
+//This does not yet account for multiple quantity of the same product (2 of a specific attribute type, but instead 2 different types of attributes.)
 function cartProductCount($products_id){
 	
 	global $db;
@@ -66,7 +67,8 @@ function cartProductCount($products_id){
         $field .= ' selected="selected"';
       }
       
-      //"Stock by Attributes"
+      //"Stock by Attributes" // Need to determine this being disabled by a 
+      // numerical method rather than a text possessing method.  If PWA_OUTOF_STOCK is not present then the item may not be disabled... :/
       if( $disable && strpos($values[$i]['text'], trim(PWA_OUT_OF_STOCK)) ){
       	$field .= $disable;
       }
@@ -76,7 +78,8 @@ function cartProductCount($products_id){
       }
       
       //close tag and display text
-      $field .= '>' . zen_output_string($values[$i]['text'], array('"' => '&quot;', '\'' => '&#039;', '<' => '&lt;', '>' => '&gt;')) . '</option>' . "\n";
+//      $field .= '>' . zen_output_string($values[$i]['text'], array('"' => '&quot;', '\'' => '&#039;', '<' => '&lt;', '>' => '&gt;')) . '</option>' . "\n";
+      $field .= '>' . zen_output_string_protected($values[$i]['text']) . '</option>' . "\n";
     }
     
     $field .= '</select>' . "\n";
@@ -186,7 +189,7 @@ function cartProductCount($products_id){
 			$customid_model_query = $db->bindVars($customid_model_query, ':products_id:', $products_id, 'integer');								
   			$customid = $db->Execute($customid_model_query);
   			//return result for display
-  			return $customid->fields['products_model'];
+            return $customid->fields['products_model'];
   		}
   		return;//nothing to return, should never reach this return
   	}
@@ -314,3 +317,37 @@ function cartProductCount($products_id){
     }
     return $stock_id_list;
   }
+
+  // function zen_is_SBA was removed as it was a duplicate of zen_product_is_sba.  If code
+  // has been written to use that function, please consider using zen_product_is_sba instead.
+  
+  function zen_product_is_sba($product_id) {
+    global $db;
+    
+    if (!isset($product_id) && !is_numeric(zen_get_prid($product_id))) {
+      return null;
+    }
+    
+    $inSBA_query = 'SELECT * 
+                    FROM information_schema.tables
+                    WHERE table_schema = :your_db: 
+                    AND table_name = :table_name:
+                    LIMIT 1;';
+    $inSBA_query = $db->bindVars($inSBA_query, ':your_db:', DB_DATABASE, 'string');
+    $inSBA_query = $db->bindVars($inSBA_query, ':table_name:', TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK, 'string');
+    $SBA_installed = $db->Execute($inSBA_query, false, false, 0, true);
+ 
+    if (sizeof($SBA_installed) > 0 && !$SBA_installed->EOF) {
+      $isSBA_query = 'SELECT stock_id FROM ' . TABLE_PRODUCTS_WITH_ATTRIBUTES_STOCK . ' where products_id = :products_id:;';
+      $isSBA_query = $db->bindVars($isSBA_query, ':products_id:', $product_id, 'integer');
+      $isSBA = $db->Execute($isSBA_query);
+    
+      if ($isSBA->RecordCount() > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    return false;
+  }  

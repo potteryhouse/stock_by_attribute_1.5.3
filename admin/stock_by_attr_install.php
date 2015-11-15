@@ -10,7 +10,7 @@
  *  -- Use at your own risk!
  *  -- Backup the databases prior to using this MOD or making any changes.
  * 
- *  Created for Stock by Attributes
+ *  Created for Stock by Attributes Current version: mc12345678 15-09-18
 **/
 
 $SBAversion = 'SBA Version 1.5.3.1';
@@ -243,6 +243,7 @@ function removeSBAconfiguration(){
 	DELETE FROM configuration  WHERE  configuration_key = 'PRODUCTS_OPTIONS_TYPE_SELECT_SBA';
 	DELETE FROM products_options_types WHERE products_options_types_name = 'SBA Select List (Dropdown) Basic';
 	*/
+	$msg = null;
 	array_push($resultMmessage, '<br /><b>Clean-Up</b>, Removing from configuration: ');
 	
 	$sql = "DELETE IGNORE FROM `".TABLE_CONFIGURATION."` WHERE `configuration_key` = 'STOCK_SHOW_IMAGE'";
@@ -1144,7 +1145,7 @@ function updateProductAttributeCombo(){
 
 //Install Optional SQL 
 // Default version.
-// This will only add the product attributes that are NOT read-only AND are NOT the new "SBA" selections
+// This will only add the product attributes that are NOT display-only AND are NOT the new "SBA" selections
 function installOptionalSQL1(){
 	/*		 		
 	INSERT INTO products_with_attributes_stock (products_id, stock_attributes, quantity) 
@@ -1494,11 +1495,12 @@ function checkSBAtable($table = null, $field = null, $display = true) {
 							WHERE TABLE_SCHEMA = '".DB_DATABASE."'
 							AND TABLE_NAME = '". $table . "'
 							AND COLUMN_NAME like '%".$field."%'");
-	
-	foreach($check as $row){
-		if($row['COLUMN_NAME']){
-			$result .= $row['COLUMN_NAME'] . '  ';
+
+	while (!$check->EOF) {
+		if( $check->fields['COLUMN_NAME'] ){
+			$result .= $check->fields['COLUMN_NAME'] . ' | ';
 		}
+		$check->MoveNext();
 	}
 
 	//limits the number of time this gets displayed, since it is call many times
@@ -1509,7 +1511,7 @@ function checkSBAtable($table = null, $field = null, $display = true) {
 	}
 	
 	//if there are any fields than we assume the table already exists
-	return $row['COLUMN_NAME'];
+	return $check->fields['COLUMN_NAME'];
 }
 
 //test for proper placement of NEW files 
@@ -1981,8 +1983,8 @@ function displaySBAtableCreate(){
 	$output = "<pre>
 	-- SAMPLE table create SQL products_with_attributes_stock structure:
 	-- This is provided for information only.
-		
-	CREATE TABLE IF NOT EXISTS `products_with_attributes_stock` (
+
+		CREATE TABLE IF NOT EXISTS `products_with_attributes_stock` (
 		  `stock_id` int(11) NOT NULL AUTO_INCREMENT,
 		  `products_id` int(11) NOT NULL,
 		  `product_attribute_combo` varchar(255) DEFAULT NULL,
@@ -1991,11 +1993,11 @@ function displaySBAtableCreate(){
 		  `sort` int(11) NOT NULL DEFAULT '0',
 		  `customid` varchar(255) DEFAULT NULL,
 		  `title` varchar(50) DEFAULT NULL,
-	PRIMARY KEY (`stock_id`),
+		  PRIMARY KEY (`stock_id`),
 		  UNIQUE KEY `idx_products_id_stock_attributes` (`products_id`,`stock_attributes`),
 		  UNIQUE KEY `idx_products_id_attributes_id` (`product_attribute_combo`),
 		  UNIQUE KEY `idx_customid` (`customid`)
-	);
+		);
 	</pre>";
 		
 	return $output;
@@ -2188,12 +2190,12 @@ echo '<div id="" style="background-color: green; padding: 2px 10px;"></div>
 		removeSBAadminPages();//Call function to Remove Admin Pages entry
     removeDynDropdownsConfiguration();
     removeDynDropdownsAdminPages();
-		//Add new database entries
+    //Add new database entries
 		insertSBAadminPages();//Call function to Add New Admin Pages entry
 		insertSBAconfiguration();//Call function to Add New configuration entries
     insertDynDropdownsConfigurationMenu();
     insertDynDropdownsConfiguration();
-		addSBAtable();//Call function to Add New table products_with_attributes_stock
+    addSBAtable();//Call function to Add New table products_with_attributes_stock
 		insertSBAconfigurationMenu();//add install script to configuration menu
 		insertSBAproductsOptionsTypes();//Call function to Add New entries	
 		//Test for proper New file placement
